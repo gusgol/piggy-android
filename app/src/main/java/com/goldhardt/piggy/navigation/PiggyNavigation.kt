@@ -6,8 +6,8 @@ import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.goldhardt.auth.LoginScreen
+import com.goldhardt.feature.categories.CategoriesScreen
 import com.goldhardt.feature.expenses.ExpensesListScreen
-import com.goldhardt.piggy.ui.home.CategoriesScreen
 import com.goldhardt.piggy.ui.home.HomeScreen
 import com.goldhardt.piggy.ui.home.TrendsScreen
 

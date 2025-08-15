@@ -47,6 +47,7 @@ dependencies {
 
     implementation(projects.core.designsystem)
     implementation(projects.feature.expenses)
+    implementation(projects.feature.categories)
     implementation(projects.feature.auth)
 
     // Core
