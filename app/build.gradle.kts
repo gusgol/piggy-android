@@ -49,10 +49,13 @@ dependencies {
     implementation(projects.feature.expenses)
     implementation(projects.feature.categories)
     implementation(projects.feature.auth)
+    implementation(projects.core.auth)
 
     // Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
     // UI + Compose
     implementation(libs.androidx.activity.compose)
@@ -61,6 +64,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+
+    // Image loading
+    implementation(libs.coil.compose)
 
     // Hilt
     implementation(libs.hilt.android)
