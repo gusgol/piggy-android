@@ -20,12 +20,19 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
     private val firestore: FirebaseFirestore,
 ) : CategoryRemoteDataSource {
 
-    private val collectionName = "categories"
+    private companion object {
+        const val COLLECTION = "categories"
+        const val FIELD_USER_ID = "userId"
+        const val FIELD_NAME = "name"
+        const val FIELD_ICON = "icon"
+        const val FIELD_COLOR = "color"
+        const val FIELD_CREATED_AT = "createdAt"
+    }
 
     override fun observeCategories(userId: String): Flow<List<Category>> = callbackFlow {
-        val registration = firestore.collection(collectionName)
-            .whereEqualTo("userId", userId)
-            .orderBy("name")
+        val registration = firestore.collection(COLLECTION)
+            .whereEqualTo(FIELD_USER_ID, userId)
+            .orderBy(FIELD_NAME)
             .addSnapshotListener { snap: QuerySnapshot?, err: FirebaseFirestoreException? ->
                 if (err != null) {
                     trySend(emptyList())
@@ -37,9 +44,9 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
     }
 
     override suspend fun getCategories(userId: String): List<Category> {
-        val snap = firestore.collection(collectionName)
-            .whereEqualTo("userId", userId)
-            .orderBy("name")
+        val snap = firestore.collection(COLLECTION)
+            .whereEqualTo(FIELD_USER_ID, userId)
+            .orderBy(FIELD_NAME)
             .get()
             .await()
         return mapCategories(snap)
@@ -48,29 +55,29 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
     override suspend fun updateCategory(category: Category) {
         val docId = category.id
         val data = mapOf(
-            "name" to category.name,
-            "icon" to category.icon,
-            "color" to category.color,
+            FIELD_NAME to category.name,
+            FIELD_ICON to category.icon,
+            FIELD_COLOR to category.color,
         )
-        firestore.collection(collectionName)
+        firestore.collection(COLLECTION)
             .document(docId)
             .set(data, SetOptions.merge())
             .await()
     }
 
     override suspend fun addCategory(userId: String, name: String, icon: String, color: String): Category {
-        val docRef = firestore.collection(collectionName).document()
+        val docRef = firestore.collection(COLLECTION).document()
         val data = mapOf(
-            "name" to name,
-            "icon" to icon,
-            "color" to color,
-            "userId" to userId,
-            "createdAt" to FieldValue.serverTimestamp(),
+            FIELD_NAME to name,
+            FIELD_ICON to icon,
+            FIELD_COLOR to color,
+            FIELD_USER_ID to userId,
+            FIELD_CREATED_AT to FieldValue.serverTimestamp(),
         )
         docRef.set(data).await()
         // Read back the document to get resolved server timestamp
         val snap = docRef.get().await()
-        val createdAt = snap.getTimestamp("createdAt") ?: Timestamp.now()
+        val createdAt = snap.getTimestamp(FIELD_CREATED_AT) ?: Timestamp.now()
         return Category(
             id = snap.id,
             name = name,
@@ -82,7 +89,7 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
     }
 
     override suspend fun deleteCategory(categoryId: String) {
-        firestore.collection(collectionName)
+        firestore.collection(COLLECTION)
             .document(categoryId)
             .delete()
             .await()
