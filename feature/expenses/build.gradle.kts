@@ -39,10 +39,12 @@ android {
 }
 
 dependencies {
+    implementation(projects.core.data)
+    implementation(projects.core.auth)
+    implementation(projects.core.designsystem)
 
-    // Core
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.appcompat)
 
     // UI + Compose
     implementation(libs.androidx.activity.compose)
@@ -56,18 +58,15 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
 
-    // Nav
-    implementation(libs.androidx.navigation3.ui)
-    implementation(libs.androidx.navigation3.runtime)
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.kotlinx.serialization.core)
+    // Lifecycle ViewModel KTX
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
 
-    // Tests
+    // Hilt Navigation Compose
+    implementation(libs.hilt.navigation.compose)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }
