@@ -5,6 +5,7 @@ import com.goldhardt.core.data.model.CategoryDocument
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.QuerySnapshot
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -40,6 +41,19 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
             .get()
             .await()
         return mapCategories(snap)
+    }
+
+    override suspend fun updateCategory(category: Category) {
+        val docId = category.id
+        val data = mapOf(
+            "name" to category.name,
+            "icon" to category.icon,
+            "color" to category.color,
+        )
+        firestore.collection(collectionName)
+            .document(docId)
+            .set(data, SetOptions.merge())
+            .await()
     }
 
     private fun mapCategories(snap: QuerySnapshot?): List<Category> {

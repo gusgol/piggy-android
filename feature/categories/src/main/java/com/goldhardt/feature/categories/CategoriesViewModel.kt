@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.data.model.Category
 import com.goldhardt.feature.categories.domain.ObserveUserCategoriesUseCase
+import com.goldhardt.feature.categories.domain.UpdateCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ data class UiState(
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
     private val observeUserCategories: ObserveUserCategoriesUseCase,
+    private val updateCategoryUseCase: UpdateCategoryUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -39,6 +41,16 @@ class CategoriesViewModel @Inject constructor(
                 .collect { categories ->
                     _uiState.update { it.copy(isLoading = false, categories = categories, error = null) }
                 }
+        }
+    }
+
+    fun updateCategory(category: Category) {
+        viewModelScope.launch {
+            try {
+                updateCategoryUseCase(category)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
         }
     }
 }

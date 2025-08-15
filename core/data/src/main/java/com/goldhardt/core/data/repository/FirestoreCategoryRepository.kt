@@ -15,5 +15,7 @@ class FirestoreCategoryRepository @Inject constructor(
 
     override suspend fun getCategories(userId: String): List<Category> =
         remote.getCategories(userId)
-}
 
+    override suspend fun updateCategory(category: Category) =
+        remote.updateCategory(category)
+}

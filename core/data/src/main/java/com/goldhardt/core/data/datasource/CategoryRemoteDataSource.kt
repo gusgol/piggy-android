@@ -12,5 +12,7 @@ interface CategoryRemoteDataSource {
 
     /** Fetch categories once for a given user. */
     suspend fun getCategories(userId: String): List<Category>
-}
 
+    /** Update a category in the remote source. */
+    suspend fun updateCategory(category: Category)
+}
