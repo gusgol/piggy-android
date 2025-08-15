@@ -49,7 +49,6 @@ import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import java.text.NumberFormat
 import java.time.Instant
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -87,10 +86,6 @@ fun ExpensesListScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
-        } else if (!state.userLoggedIn) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Sign in to see your expenses", style = MaterialTheme.typography.bodyLarge)
-            }
         } else if (state.expenses.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No expenses for this month", style = MaterialTheme.typography.bodyLarge)
@@ -98,7 +93,6 @@ fun ExpensesListScreen(
         } else {
             ExpensesList(
                 total = state.total,
-                month = state.month,
                 items = state.expenses,
             )
         }
@@ -106,7 +100,7 @@ fun ExpensesListScreen(
 }
 
 @Composable
-private fun TotalCard(total: Double, month: YearMonth) {
+private fun TotalCard(total: Double) {
     val currency = NumberFormat.getCurrencyInstance()
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -143,7 +137,6 @@ private fun TotalCard(total: Double, month: YearMonth) {
 @Composable
 private fun ExpensesList(
     total: Double,
-    month: YearMonth,
     items: List<Expense>) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -151,7 +144,7 @@ private fun ExpensesList(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
-            TotalCard(total = total, month = month)
+            TotalCard(total = total)
         }
         items(items, key = { it.id }) { expense ->
             ExpenseItem(expense)
@@ -262,7 +255,7 @@ private fun CategoryAvatar(name: String?, colorHex: String?, iconEmoji: String?)
 @Composable
 private fun TotalCardPreview() {
     Column(Modifier.padding(16.dp)) {
-        TotalCard(total = 1290.0, month = YearMonth.now())
+        TotalCard(total = 1290.0)
     }
 }
 
