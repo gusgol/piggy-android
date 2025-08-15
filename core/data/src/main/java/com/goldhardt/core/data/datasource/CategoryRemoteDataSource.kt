@@ -15,4 +15,10 @@ interface CategoryRemoteDataSource {
 
     /** Update a category in the remote source. */
     suspend fun updateCategory(category: Category)
+
+    /** Create a new category for the given user and return the created model. */
+    suspend fun addCategory(userId: String, name: String, icon: String, color: String): Category
+
+    /** Delete a category by its id. */
+    suspend fun deleteCategory(categoryId: String)
 }

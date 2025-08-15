@@ -2,6 +2,8 @@ package com.goldhardt.core.data.datasource
 
 import com.goldhardt.core.data.model.Category
 import com.goldhardt.core.data.model.CategoryDocument
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.QuerySnapshot
@@ -53,6 +55,36 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
         firestore.collection(collectionName)
             .document(docId)
             .set(data, SetOptions.merge())
+            .await()
+    }
+
+    override suspend fun addCategory(userId: String, name: String, icon: String, color: String): Category {
+        val docRef = firestore.collection(collectionName).document()
+        val data = mapOf(
+            "name" to name,
+            "icon" to icon,
+            "color" to color,
+            "userId" to userId,
+            "createdAt" to FieldValue.serverTimestamp(),
+        )
+        docRef.set(data).await()
+        // Read back the document to get resolved server timestamp
+        val snap = docRef.get().await()
+        val createdAt = snap.getTimestamp("createdAt") ?: Timestamp.now()
+        return Category(
+            id = snap.id,
+            name = name,
+            createdAt = createdAt,
+            userId = userId,
+            icon = icon,
+            color = color,
+        )
+    }
+
+    override suspend fun deleteCategory(categoryId: String) {
+        firestore.collection(collectionName)
+            .document(categoryId)
+            .delete()
             .await()
     }
 

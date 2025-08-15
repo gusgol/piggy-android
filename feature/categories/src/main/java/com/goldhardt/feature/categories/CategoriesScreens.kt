@@ -10,6 +10,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,8 +20,11 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -33,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,11 +48,9 @@ import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.data.model.Category
+import com.goldhardt.designsystem.components.ConfigureTopBar
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.Icon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,10 +58,28 @@ fun CategoriesScreen(
     modifier: Modifier = Modifier,
     viewModel: CategoriesViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
+
+    // Add Category state (moved up to be available in ConfigureTopBar actions)
+    val isAddingCategory = remember { mutableStateOf(false) }
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ConfigureTopBar (
+        title = context.getString(R.string.title_categories),
+        actions = {
+            IconButton(onClick = {
+                // Open Add Category sheet
+                isAddingCategory.value = true
+            }) {
+                Icon(imageVector = Icons.Outlined.Add, contentDescription = stringResource(R.string.action_add_category))
+            }
+        }
+    )
+
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     var editingCategory by remember { mutableStateOf<Category?>(null) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Surface(modifier = modifier.fillMaxSize()) {
         when {
@@ -85,14 +109,40 @@ fun CategoriesScreen(
             }
         }
 
+        // Edit bottom sheet
         editingCategory?.let { current ->
-            EditCategoryBottomSheet(
-                category = current,
-                sheetState = sheetState,
+            CategoryEditorBottomSheet(
+                title = "Edit Category",
+                sheetState = editSheetState,
+                initialName = current.name,
+                initialIcon = current.icon,
+                initialColor = current.color,
+                showDelete = true,
                 onDismiss = { editingCategory = null },
-                onSave = { updated ->
-                    viewModel.updateCategory(updated)
+                onSave = { name, icon, color ->
+                    viewModel.updateCategory(current.copy(name = name.trim(), icon = icon, color = color))
                     editingCategory = null
+                },
+                onDelete = {
+                    viewModel.deleteCategory(current.id)
+                    editingCategory = null
+                }
+            )
+        }
+
+        // Add bottom sheet
+        if (isAddingCategory.value) {
+            CategoryEditorBottomSheet(
+                title = "Add Category",
+                sheetState = addSheetState,
+                initialName = "",
+                initialIcon = ICONS.firstOrNull() ?: "🏷️",
+                initialColor = COLORS.firstOrNull() ?: "#FFADAD",
+                showDelete = false,
+                onDismiss = { isAddingCategory.value = false },
+                onSave = { name, icon, color ->
+                    viewModel.addCategory(name.trim(), icon, color)
+                    isAddingCategory.value = false
                 }
             )
         }
@@ -142,20 +192,25 @@ private fun CategoryRow(category: Category, modifier: Modifier = Modifier) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun EditCategoryBottomSheet(
-    category: Category,
-    sheetState: androidx.compose.material3.SheetState,
+private fun CategoryEditorBottomSheet(
+    title: String,
+    sheetState: SheetState,
+    initialName: String,
+    initialIcon: String,
+    initialColor: String,
+    showDelete: Boolean,
     onDismiss: () -> Unit,
-    onSave: (Category) -> Unit,
+    onSave: (name: String, icon: String, color: String) -> Unit,
+    onDelete: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
-        var name by rememberSaveable(category.id) { mutableStateOf(category.name) }
-        var selectedIcon by rememberSaveable(category.id) { mutableStateOf(category.icon) }
-        var selectedColor by rememberSaveable(category.id) { mutableStateOf(category.color) }
+        var name by rememberSaveable(title) { mutableStateOf(initialName) }
+        var selectedIcon by rememberSaveable(title) { mutableStateOf(initialIcon) }
+        var selectedColor by rememberSaveable(title) { mutableStateOf(initialColor) }
 
         Column(
             modifier = Modifier
@@ -178,7 +233,7 @@ private fun EditCategoryBottomSheet(
                 }
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Edit Category",
+                    text = title,
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
                 )
             }
@@ -207,7 +262,11 @@ private fun EditCategoryBottomSheet(
                             .clip(CircleShape)
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                             .then(
-                                if (selected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                if (selected) Modifier.border(
+                                    2.dp,
+                                    MaterialTheme.colorScheme.primary,
+                                    CircleShape
+                                )
                                 else Modifier
                             )
                             .clickable { selectedIcon = emoji },
@@ -251,22 +310,19 @@ private fun EditCategoryBottomSheet(
             ) {
                 Button(
                     onClick = {
-                        val updated = category.copy(
-                            name = name.trim(),
-                            icon = selectedIcon,
-                            color = selectedColor
-                        )
-                        onSave(updated)
+                        onSave(name.trim(), selectedIcon, selectedColor)
                     },
                     enabled = name.isNotBlank()
                 ) { Text("Save") }
-                Button(
-                    onClick = { /* TODO: hook up delete */ },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                ) { Icon(imageVector = Icons.Outlined.Delete, contentDescription = "Delete") }
+                if (showDelete) {
+                    Button(
+                        onClick = { onDelete?.invoke() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        )
+                    ) { Icon(imageVector = Icons.Outlined.Delete, contentDescription = "Delete") }
+                }
             }
 
             Spacer(Modifier.height(8.dp))

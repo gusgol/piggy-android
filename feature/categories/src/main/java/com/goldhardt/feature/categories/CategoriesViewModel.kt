@@ -3,6 +3,8 @@ package com.goldhardt.feature.categories
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.data.model.Category
+import com.goldhardt.feature.categories.domain.AddCategoryUseCase
+import com.goldhardt.feature.categories.domain.DeleteCategoryUseCase
 import com.goldhardt.feature.categories.domain.ObserveUserCategoriesUseCase
 import com.goldhardt.feature.categories.domain.UpdateCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +26,8 @@ data class UiState(
 class CategoriesViewModel @Inject constructor(
     private val observeUserCategories: ObserveUserCategoriesUseCase,
     private val updateCategoryUseCase: UpdateCategoryUseCase,
+    private val addCategoryUseCase: AddCategoryUseCase,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UiState())
@@ -48,6 +52,26 @@ class CategoriesViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 updateCategoryUseCase(category)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun addCategory(name: String, icon: String, color: String) {
+        viewModelScope.launch {
+            try {
+                addCategoryUseCase(name, icon, color)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message) }
+            }
+        }
+    }
+
+    fun deleteCategory(categoryId: String) {
+        viewModelScope.launch {
+            try {
+                deleteCategoryUseCase(categoryId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             }
