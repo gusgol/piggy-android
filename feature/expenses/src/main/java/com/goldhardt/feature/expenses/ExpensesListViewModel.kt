@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.data.model.Expense
 import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.data.model.ExpenseFormData
+import com.goldhardt.core.data.model.ExpenseUpdate
 import com.goldhardt.feature.expenses.domain.ObserveMonthExpensesUseCase
 import com.goldhardt.feature.expenses.domain.AddExpenseUseCase
 import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
+import com.goldhardt.feature.expenses.domain.UpdateExpenseUseCase
+import com.goldhardt.feature.expenses.domain.DeleteExpenseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,6 +38,8 @@ class ExpensesListViewModel @Inject constructor(
     private val observeMonthExpenses: ObserveMonthExpensesUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
     private val getUserCategoriesUseCase: GetUserCategoriesUseCase,
+    private val updateExpenseUseCase: UpdateExpenseUseCase,
+    private val deleteExpenseUseCase: DeleteExpenseUseCase,
 ) : ViewModel() {
 
     private val selectedMonth = MutableStateFlow(YearMonth.now())
@@ -71,7 +77,7 @@ class ExpensesListViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 addExpenseUseCase(
-                    com.goldhardt.core.data.model.ExpenseFormData(
+                    ExpenseFormData(
                         name = name.trim(),
                         amount = amount,
                         date = date,
@@ -79,7 +85,33 @@ class ExpensesListViewModel @Inject constructor(
                         isFixed = isFixed,
                     )
                 )
-                // Optionally, we could trigger a refresh, but observe flow will update in realtime
+            } catch (t: Throwable) {
+                onError(t)
+            }
+        }
+    }
+
+    fun updateExpense(original: Expense, name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val update = ExpenseUpdate(
+                    name = original.name.takeIf { it != name }?.let { name.trim() },
+                    amount = original.amount.takeIf { it != amount }?.let { amount },
+                    date = original.date.takeIf { it != date }?.let { date },
+                    categoryId = original.categoryId.takeIf { it != categoryId }?.let { categoryId },
+                    isFixed = original.isFixed.takeIf { it != isFixed }?.let { isFixed },
+                )
+                updateExpenseUseCase(original.id, update)
+            } catch (t: Throwable) {
+                onError(t)
+            }
+        }
+    }
+
+    fun deleteExpense(expenseId: String, onError: (Throwable) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                deleteExpenseUseCase(expenseId)
             } catch (t: Throwable) {
                 onError(t)
             }
