@@ -8,7 +8,7 @@ import com.google.firebase.Timestamp
 data class Category(
     val id: String,
     val name: String,
-    val createdAt: Timestamp,
+    val createdAt: Timestamp, // TODO leaking firebase details.
     val userId: String,
     val icon: String,
     val color: String,

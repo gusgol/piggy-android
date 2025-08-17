@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_expenses">Expenses</string>
+    <string name="title_add_expense">Add expense</string>
+    <string name="no_expenses_for_month">No expenses for this month</string>
+    <string name="label_name">Name</string>
+    <string name="label_amount">Amount</string>
+    <string name="label_date">Date</string>
+    <string name="label_category">Category</string>
+    <string name="label_fixed">Fixed</string>
+    <string name="btn_save">Save</string>
 </resources>

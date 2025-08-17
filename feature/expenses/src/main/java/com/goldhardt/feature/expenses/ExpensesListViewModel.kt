@@ -3,16 +3,22 @@ package com.goldhardt.feature.expenses
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.data.model.Expense
+import com.goldhardt.core.data.model.Category
 import com.goldhardt.feature.expenses.domain.ObserveMonthExpensesUseCase
+import com.goldhardt.feature.expenses.domain.AddExpenseUseCase
+import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.YearMonth
 
 data class UiState(
@@ -26,9 +32,14 @@ data class UiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExpensesListViewModel @Inject constructor(
     private val observeMonthExpenses: ObserveMonthExpensesUseCase,
+    private val addExpenseUseCase: AddExpenseUseCase,
+    private val getUserCategoriesUseCase: GetUserCategoriesUseCase,
 ) : ViewModel() {
 
     private val selectedMonth = MutableStateFlow(YearMonth.now())
+
+    private val _categories = MutableStateFlow<List<Category>>(emptyList())
+    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
 
     val uiState: StateFlow<UiState> =
         selectedMonth
@@ -44,6 +55,35 @@ class ExpensesListViewModel @Inject constructor(
 
     fun setMonth(month: YearMonth) {
         selectedMonth.value = month
+    }
+
+    fun refreshCategories() {
+        viewModelScope.launch {
+            try {
+                _categories.value = getUserCategoriesUseCase()
+            } catch (_: Throwable) {
+                _categories.value = emptyList()
+            }
+        }
+    }
+
+    fun addExpense(name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                addExpenseUseCase(
+                    com.goldhardt.core.data.model.ExpenseFormData(
+                        name = name.trim(),
+                        amount = amount,
+                        date = date,
+                        categoryId = categoryId,
+                        isFixed = isFixed,
+                    )
+                )
+                // Optionally, we could trigger a refresh, but observe flow will update in realtime
+            } catch (t: Throwable) {
+                onError(t)
+            }
+        }
     }
 
     private fun createUiState(
