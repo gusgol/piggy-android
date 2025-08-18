@@ -38,6 +38,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -48,6 +50,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard
 import java.text.NumberFormat
+import java.util.Locale
+import androidx.compose.foundation.gestures.detectTapGestures
+import kotlin.math.atan2
+import kotlin.math.sqrt
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun TrendsScreen(
@@ -89,11 +96,11 @@ fun TrendsScreen(
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item { TotalAmountCard(total = state.total) }
-            item { Spacer(Modifier.height(12.dp)) }
 
             // Pie chart section
             item {
                 Surface(
+                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
                     tonalElevation = 1.dp,
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.background,
@@ -109,20 +116,36 @@ fun TrendsScreen(
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(Modifier.height(12.dp))
+                        var selected by remember { mutableStateOf<PieSlice?>(null) }
+                        val currency = NumberFormat.getCurrencyInstance()
+                        val slicesUi = state.slices.map {
+                            PieSlice(
+                                label = it.categoryName,
+                                value = it.amount.toFloat(),
+                                color = parseHexColorOrDefault(it.colorHex, MaterialTheme.colorScheme.tertiaryContainer)
+                            )
+                        }
                         SimplePieChart(
-                            slices = state.slices.map {
-                                PieSlice(
-                                    label = it.categoryName,
-                                    value = it.amount.toFloat(),
-                                    color = parseHexColorOrDefault(it.colorHex, MaterialTheme.colorScheme.tertiaryContainer)
-                                )
-                            },
+                            slices = slicesUi,
                             chartSize = 180.dp,
+                            onSliceClick = { selected = it }
                         )
+                        AnimatedVisibility(
+                            modifier = Modifier.padding(top = 16.dp),
+                            visible = selected != null,
+                            enter = expandVertically(animationSpec = tween(durationMillis = 150)) + fadeIn(animationSpec = tween(durationMillis = 120)),
+                            exit = shrinkVertically(animationSpec = tween(durationMillis = 150)) + fadeOut(animationSpec = tween(durationMillis = 120))
+                        ) {
+                            selected?.let { s ->
+                                SelectedSliceInfo(
+                                    slice = s,
+                                    totalAmount = slicesUi.sumOf { it.value.toDouble() }
+                                )
+                            }
+                        }
                     }
                 }
             }
-            item { Spacer(Modifier.height(12.dp)) }
 
             // Grouped categories as a simple list with dividers
             itemsIndexed(state.categories, key = { _, item -> item.id }) { index, cat ->
@@ -143,11 +166,45 @@ private fun parseHexColorOrDefault(hex: String?, fallback: Color): Color {
 private data class PieSlice(val label: String, val value: Float, val color: Color)
 
 @Composable
-private fun SimplePieChart(slices: List<PieSlice>, chartSize: Dp, stroke: Dp = 24.dp) {
+private fun SimplePieChart(
+    slices: List<PieSlice>,
+    chartSize: Dp,
+    stroke: Dp = 24.dp,
+    onSliceClick: (PieSlice) -> Unit = {}
+) {
     val total = slices.sumOf { it.value.toDouble() }.toFloat().coerceAtLeast(0.0001f)
-    Canvas(modifier = Modifier
-        .fillMaxWidth()
-        .height(chartSize + 16.dp)
+    val density = LocalDensity.current
+    val diameterPx = with(density) { chartSize.toPx() }
+    val topPaddingPx = with(density) { 8.dp.toPx() }
+    val strokePx = with(density) { stroke.toPx() }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(chartSize + 16.dp)
+            .pointerInput(slices, diameterPx, topPaddingPx, strokePx, total) {
+                detectTapGestures(onTap = { offset ->
+                    val left = (size.width.toFloat() - diameterPx) / 2f
+                    val centerX = left + diameterPx / 2f
+                    val centerY = topPaddingPx + diameterPx / 2f
+                    val dx = offset.x - centerX
+                    val dy = offset.y - centerY
+                    val r = sqrt(dx * dx + dy * dy)
+                    val radius = diameterPx / 2f
+                    if (r < radius - strokePx / 2f || r > radius + strokePx / 2f) return@detectTapGestures
+                    val deg = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                    val fromTop = (deg + 450f) % 360f
+                    var start = 0f
+                    for (slice in slices) {
+                        val sweep = (slice.value / total) * 360f
+                        if (fromTop >= start && fromTop < start + sweep) {
+                            onSliceClick(slice)
+                            break
+                        }
+                        start += sweep
+                    }
+                })
+            }
     ) {
         val diameter = chartSize.toPx()
         val left = (size.width - diameter) / 2f
@@ -240,6 +297,57 @@ private fun CategoryGroupRow(data: CategoryGroupUi) {
     }
 }
 
+
+@Composable
+private fun SelectedSliceInfo(
+    slice: PieSlice,
+    totalAmount: Double,
+    modifier: Modifier = Modifier
+) {
+    val currency = remember { NumberFormat.getCurrencyInstance() }
+    val safeTotal = totalAmount.coerceAtLeast(0.0001)
+    val pct = ((slice.value.toDouble() / safeTotal) * 100.0)
+
+    Spacer(Modifier.height(16.dp))
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 1.dp,
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier
+                    .width(10.dp)
+                    .height(10.dp),
+                shape = CircleShape,
+                color = slice.color,
+                content = {}
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = slice.label,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "${String.format(Locale.getDefault(), "%.1f", pct)}%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = currency.format(slice.value.toDouble()),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+        }
+    }
+}
 
 @Preview(showBackground = true)
 @Composable
