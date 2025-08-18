@@ -8,8 +8,8 @@ import androidx.navigation3.ui.NavDisplay
 import com.goldhardt.auth.LoginScreen
 import com.goldhardt.feature.categories.CategoriesScreen
 import com.goldhardt.feature.expenses.ExpensesListScreen
+import com.goldhardt.feature.trends.TrendsScreen
 import com.goldhardt.piggy.ui.home.HomeScreen
-import com.goldhardt.piggy.ui.home.TrendsScreen
 
 @Composable
 fun PiggyNavigation() {

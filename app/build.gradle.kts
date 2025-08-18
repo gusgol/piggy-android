@@ -50,6 +50,7 @@ dependencies {
     implementation(projects.feature.categories)
     implementation(projects.feature.auth)
     implementation(projects.core.auth)
+    implementation(projects.feature.trends)
 
     // Core
     implementation(libs.androidx.core.ktx)

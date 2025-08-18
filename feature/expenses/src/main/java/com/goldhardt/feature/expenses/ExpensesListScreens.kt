@@ -28,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -53,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.data.model.Expense
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
+import com.goldhardt.designsystem.components.TotalAmountCard
 import com.goldhardt.feature.expenses.ui.ExpenseEditorBottomSheet
 import java.text.NumberFormat
 import java.time.Instant
@@ -176,41 +176,6 @@ fun ExpensesListScreen(
 }
 
 @Composable
-private fun TotalCard(total: Double) {
-    val currency = NumberFormat.getCurrencyInstance()
-    OutlinedCard(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            containerColor = MaterialTheme.colorScheme.background
-        ),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp)
-        ) {
-            Text(
-                text = "Total",
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = currency.format(total),
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.tertiary
-            )
-        }
-    }
-}
-
-@Composable
 private fun ExpensesList(
     total: Double,
     items: List<Expense>,
@@ -222,7 +187,7 @@ private fun ExpensesList(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item {
-            TotalCard(total = total)
+            TotalAmountCard(total = total)
         }
         items(items, key = { it.id }) { expense ->
             ExpenseItem(expense, onClick = { onClick(expense) })
@@ -331,17 +296,6 @@ private fun CategoryAvatar(name: String?, colorHex: String?, iconEmoji: String?)
     }
 }
 
-
-
-
-
-@Preview
-@Composable
-private fun TotalCardPreview() {
-    Column(Modifier.padding(16.dp)) {
-        TotalCard(total = 1290.0)
-    }
-}
 
 @Composable
 @Preview
