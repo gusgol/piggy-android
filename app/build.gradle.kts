@@ -51,6 +51,7 @@ dependencies {
     implementation(projects.feature.auth)
     implementation(projects.core.auth)
     implementation(projects.feature.trends)
+    implementation(projects.core.data)
 
     // Core
     implementation(libs.androidx.core.ktx)
@@ -73,6 +74,12 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
+
+    // Background work + Hilt worker
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
+    ksp("androidx.hilt:hilt-compiler:1.2.0")
 
     // Firebase
     implementation(platform(libs.firebase.bom))

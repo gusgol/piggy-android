@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Needed on Android 13+ to post suggestion notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:targetApi="33" />
+
     <application
         android:name=".PiggyApplication"
         android:allowBackup="true"
@@ -22,6 +25,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".notifications.ExpenseNotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name=".notifications.ExpenseSuggestionReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>
