@@ -39,13 +39,13 @@ class ObserveMonthlyTrendsUseCase @Inject constructor(
                         categoryColor = c?.color ?: e.categoryColor,
                     )
                 }
-                buildTrends(enriched)
+                buildTrends(month, enriched)
             }
         }
     }
 
-    private fun buildTrends(expenses: List<Expense>): TrendsData {
-        if (expenses.isEmpty()) return TrendsData(total = 0.0, slices = emptyList(), categories = emptyList())
+    private fun buildTrends(month: YearMonth, expenses: List<Expense>): TrendsData {
+        if (expenses.isEmpty()) return TrendsData(total = 0.0, slices = emptyList(), categories = emptyList(), dayStacks = emptyList())
 
         val groups = expenses.groupBy { it.categoryId }
         val categories = groups.map { (categoryId, items) ->
@@ -73,7 +73,25 @@ class ObserveMonthlyTrendsUseCase @Inject constructor(
         val total = categories.sumOf { it.total }
         val slices = categories.map { Slice(it.id, it.name, it.colorHex, it.total) }
 
-        return TrendsData(total = total, slices = slices, categories = categories)
+        // Build day-level stacks across the entire selected month
+        val daysInMonth = month.lengthOfMonth()
+        val byDay: Map<Int, List<Expense>> = expenses.groupBy { exp ->
+            try { exp.date.atZone(ZoneId.systemDefault()).dayOfMonth } catch (_: Throwable) { 1 }
+        }
+        val dayStacks = (1..daysInMonth).map { day ->
+            val items = byDay[day].orEmpty()
+            val pieces = items
+                .groupBy { it.categoryId }
+                .map { (categoryId, list) ->
+                    val amount = list.sumOf { it.amount }
+                    val colorHex = list.firstNotNullOfOrNull { it.categoryColor }
+                    DayPiece(categoryId = categoryId, amount = amount, colorHex = colorHex)
+                }
+                .sortedByDescending { it.amount }
+            DayStack(day = day, pieces = pieces)
+        }
+
+        return TrendsData(total = total, slices = slices, categories = categories, dayStacks = dayStacks)
     }
 }
 
@@ -82,10 +100,11 @@ class ObserveMonthlyTrendsUseCase @Inject constructor(
 data class TrendsData(
     val total: Double,
     val slices: List<Slice>,
-    val categories: List<CategoryAggregate>
+    val categories: List<CategoryAggregate>,
+    val dayStacks: List<DayStack>
 ) {
     companion object {
-        fun empty(month: YearMonth) = TrendsData(0.0, emptyList(), emptyList())
+        fun empty(month: YearMonth) = TrendsData(0.0, emptyList(), emptyList(), emptyList())
     }
 }
 
@@ -105,9 +124,21 @@ data class CategoryAggregate(
     val items: List<CategoryExpenseItem>,
 )
 
+// New daily stacked bar domain models
+
+data class DayStack(
+    val day: Int,
+    val pieces: List<DayPiece>,
+)
+
+data class DayPiece(
+    val categoryId: String,
+    val amount: Double,
+    val colorHex: String?,
+)
+
 data class CategoryExpenseItem(
     val name: String,
     val amount: Double,
     val dateLabel: String,
 )
-

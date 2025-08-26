@@ -47,6 +47,12 @@ class TrendsViewModel @Inject constructor(
                                     )
                                 }
                             )
+                        },
+                        dayStacks = trends.dayStacks.map { day ->
+                            DayStackUi(
+                                day = day.day,
+                                pieces = day.pieces.map { p -> DayPieceUi(categoryId = p.categoryId, amount = p.amount, colorHex = p.colorHex) }
+                            )
                         }
                     )
                 }
@@ -68,6 +74,7 @@ data class TrendsUiState(
     val total: Double = 0.0,
     val slices: List<CategorySliceUi> = emptyList(),
     val categories: List<CategoryGroupUi> = emptyList(),
+    val dayStacks: List<DayStackUi> = emptyList(),
 )
 
 data class CategorySliceUi(
@@ -75,6 +82,19 @@ data class CategorySliceUi(
     val categoryName: String,
     val colorHex: String?,
     val amount: Double,
+)
+
+// Daily stacked bars UI models
+
+data class DayStackUi(
+    val day: Int,
+    val pieces: List<DayPieceUi>,
+)
+
+data class DayPieceUi(
+    val categoryId: String,
+    val amount: Double,
+    val colorHex: String?,
 )
 
 data class CategoryGroupUi(
@@ -92,4 +112,3 @@ data class CategoryExpenseItemUi(
     val amount: Double,
     val dateLabel: String,
 )
-

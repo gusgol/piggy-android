@@ -55,6 +55,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import kotlin.math.atan2
 import kotlin.math.sqrt
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import java.time.LocalDate
+import java.time.format.TextStyle
 
 @Composable
 fun TrendsScreen(
@@ -117,7 +121,6 @@ fun TrendsScreen(
                         )
                         Spacer(Modifier.height(12.dp))
                         var selected by remember { mutableStateOf<PieSlice?>(null) }
-                        val currency = NumberFormat.getCurrencyInstance()
                         val slicesUi = state.slices.map {
                             PieSlice(
                                 label = it.categoryName,
@@ -143,6 +146,36 @@ fun TrendsScreen(
                                 )
                             }
                         }
+                    }
+                }
+            }
+
+            // Daily stacked bar chart section
+            item {
+                Surface(
+                    modifier = Modifier.padding(top = 0.dp, bottom = 12.dp),
+                    tonalElevation = 1.dp,
+                    shape = MaterialTheme.shapes.large,
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "By day",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        DailyStackedBarChart(
+                            stacks = state.dayStacks,
+                            chartHeight = 180.dp,
+                            barWidth = 18.dp,
+                            barSpacing = 6.dp,
+                            yearMonth = state.month
+                        )
                     }
                 }
             }
@@ -346,6 +379,88 @@ private fun SelectedSliceInfo(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
         }
+    }
+}
+
+// Daily stacked bar chart composables
+
+@Composable
+private fun DailyStackedBarChart(
+    stacks: List<DayStackUi>,
+    chartHeight: Dp,
+    barWidth: Dp,
+    barSpacing: Dp,
+    yearMonth: java.time.YearMonth,
+) {
+    val maxTotal = stacks.maxOfOrNull { day -> day.pieces.sumOf { it.amount } }?.coerceAtLeast(0.0001) ?: 0.0001
+    Column(modifier = Modifier.fillMaxWidth()) {
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(barSpacing),
+            contentPadding = PaddingValues(horizontal = 8.dp)
+        ) {
+            items(items = stacks, key = { it.day }) { day ->
+                DayBar(yearMonth = yearMonth, stack = day, maxTotal = maxTotal, chartHeight = chartHeight, barWidth = barWidth)
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun DayBar(
+    yearMonth: java.time.YearMonth,
+    stack: DayStackUi,
+    maxTotal: Double,
+    chartHeight: Dp,
+    barWidth: Dp,
+) {
+    val emptyDayColor = MaterialTheme.colorScheme.surfaceVariant
+    val defaultPieceColor = MaterialTheme.colorScheme.tertiaryContainer
+    val segments: List<Pair<Double, Color>> = stack.pieces.map { it.amount to parseHexColorOrDefault(it.colorHex, defaultPieceColor) }
+    val weekday = try {
+        LocalDate.of(yearMonth.year, yearMonth.month, stack.day)
+            .dayOfWeek
+            .getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    } catch (_: Throwable) { "" }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Canvas(
+            modifier = Modifier
+                .height(chartHeight)
+                .width(barWidth)
+        ) {
+            val totalForDay = stack.pieces.sumOf { it.amount }
+            if (totalForDay <= 0.0) {
+                // draw faint baseline to indicate empty day
+                drawRect(
+                    color = emptyDayColor,
+                    size = androidx.compose.ui.geometry.Size(size.width, 2f),
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 2f)
+                )
+                return@Canvas
+            }
+            var yBottom = size.height
+            segments.forEach { (amount, color) ->
+                if (amount <= 0.0) return@forEach
+                val h = ((amount / maxTotal) * size.height).toFloat().coerceAtLeast(1f)
+                drawRect(
+                    color = color,
+                    topLeft = androidx.compose.ui.geometry.Offset(0f, yBottom - h),
+                    size = androidx.compose.ui.geometry.Size(width = size.width, height = h)
+                )
+                yBottom -= h
+            }
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = stack.day.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+        )
+        Text(
+            text = weekday,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
     }
 }
 
