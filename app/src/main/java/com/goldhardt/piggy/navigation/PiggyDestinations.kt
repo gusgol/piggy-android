@@ -15,4 +15,7 @@ sealed interface Screen {
     object Login : Screen {
         override val name: String = "Login"
     }
+    object ImportExpenses : Screen {
+        override val name: String = "ImportExpenses"
+    }
 }

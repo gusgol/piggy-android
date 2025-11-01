@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -62,7 +63,8 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpensesListScreen(
-    viewModel: ExpensesListViewModel = hiltViewModel()
+    viewModel: ExpensesListViewModel = hiltViewModel(),
+    onNavigateToImport: () -> Unit = {}
 ) {
     val context = LocalContext.current
     // Add expense state
@@ -75,6 +77,9 @@ fun ExpensesListScreen(
     ConfigureTopBar (
         title = stringResource(R.string.title_expenses),
         actions = {
+            IconButton(onClick = onNavigateToImport) {
+                Icon(imageVector = Icons.Filled.FileUpload, contentDescription = "Import expenses")
+            }
             IconButton(onClick = {
                 viewModel.refreshCategories()
                 isAddingExpense.value = true
