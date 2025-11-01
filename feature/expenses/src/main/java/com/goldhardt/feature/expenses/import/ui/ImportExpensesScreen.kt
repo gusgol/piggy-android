@@ -446,7 +446,7 @@ private fun ImportExpenseCard(
                     }
                 } else if (item.isConfirmed) {
                     AssistChip(
-                        onClick = { },
+                        onClick = { onSkip() }, // Allow unconfirming by clicking
                         label = { Text("✓ Confirmed") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = AssistChipDefaults.assistChipColors(
@@ -456,7 +456,7 @@ private fun ImportExpenseCard(
                     )
                 } else {
                     AssistChip(
-                        onClick = { },
+                        onClick = { onConfirm() }, // Allow re-confirming by clicking
                         label = { Text("Skipped") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = AssistChipDefaults.assistChipColors(

@@ -75,6 +75,19 @@ class CsvExpenseParser @Inject constructor() {
                                 rowNumber = rowNumber
                             )
                             emit(ParseResult.Success(expense))
+                        } else {
+                            // Emit error for invalid date or amount
+                            val errorMessage = when {
+                                date == null && amount == null -> "Invalid date and amount format"
+                                date == null -> "Invalid date format. Expected YYYY-MM-DD"
+                                else -> "Invalid amount format. Expected decimal number"
+                            }
+                            emit(
+                                ParseResult.Error(
+                                    rowNumber = rowNumber,
+                                    message = errorMessage
+                                )
+                            )
                         }
                     } catch (e: Exception) {
                         emit(

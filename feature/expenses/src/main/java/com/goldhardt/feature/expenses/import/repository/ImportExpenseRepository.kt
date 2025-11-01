@@ -42,6 +42,7 @@ class ImportExpenseRepository @Inject constructor(
         val confirmedItems = items.filter { it.isConfirmed && !it.isSkipped }
         val skippedCount = items.size - confirmedItems.size
         var savedCount = 0
+        val errors = mutableListOf<Pair<Int, String>>()
 
         // Process in batches of 50 for performance
         confirmedItems.chunked(50).forEach { batch ->
@@ -60,10 +61,22 @@ class ImportExpenseRepository @Inject constructor(
                     expenseRepository.addExpense(userId, formData)
                     savedCount++
                 } catch (e: Exception) {
-                    // Log error but continue with next item
-                    // In production, you might want to collect these errors
+                    // Collect error for this row
+                    errors.add(item.parsedExpense.rowNumber to (e.message ?: "Unknown error"))
+                    // Log error for debugging
+                    android.util.Log.e("ImportExpenseRepository", 
+                        "Failed to save expense from row ${item.parsedExpense.rowNumber}", e)
                 }
             }
+        }
+
+        // If there were errors, throw exception with details
+        if (errors.isNotEmpty() && savedCount == 0) {
+            throw Exception("Failed to save all expenses. First error: ${errors.first().second}")
+        } else if (errors.isNotEmpty()) {
+            // Some succeeded, some failed - log but don't throw
+            android.util.Log.w("ImportExpenseRepository", 
+                "Saved $savedCount expenses, but ${errors.size} failed to save")
         }
 
         savedCount to skippedCount

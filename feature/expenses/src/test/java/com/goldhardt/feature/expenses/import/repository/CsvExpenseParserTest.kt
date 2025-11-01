@@ -73,7 +73,7 @@ class CsvExpenseParserTest {
     }
 
     @Test
-    fun `parseStream with invalid date format skips row`() = runTest {
+    fun `parseStream with invalid date format emits error`() = runTest {
         val csv = """
             data,lançamento,valor
             2025-10-30,Valid Row,100.0
@@ -91,10 +91,11 @@ class CsvExpenseParserTest {
         assertEquals(2, successResults.size)
         assertEquals(1, errorResults.size)
         assertEquals(3, errorResults[0].rowNumber)
+        assertTrue(errorResults[0].message.contains("Invalid date format"))
     }
 
     @Test
-    fun `parseStream with invalid amount format skips row`() = runTest {
+    fun `parseStream with invalid amount format emits error`() = runTest {
         val csv = """
             data,lançamento,valor
             2025-10-30,Valid Row,100.0
@@ -110,6 +111,7 @@ class CsvExpenseParserTest {
         
         assertEquals(2, successResults.size)
         assertEquals(1, errorResults.size)
+        assertTrue(errorResults[0].message.contains("Invalid amount format"))
     }
 
     @Test
