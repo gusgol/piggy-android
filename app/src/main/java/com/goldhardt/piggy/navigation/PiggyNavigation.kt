@@ -8,6 +8,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.goldhardt.auth.LoginScreen
 import com.goldhardt.feature.categories.CategoriesScreen
 import com.goldhardt.feature.expenses.ExpensesListScreen
+import com.goldhardt.feature.expenses.import.ui.ImportExpensesScreen
 import com.goldhardt.feature.trends.TrendsScreen
 import com.goldhardt.piggy.ui.home.HomeScreen
 
@@ -24,6 +25,11 @@ fun PiggyNavigation() {
                         backStack.add(Screen.Expenses)
                     }
                 }
+                is Screen.ImportExpenses -> NavEntry(screen) {
+                    ImportExpensesScreen(
+                        onNavigateBack = { backStack.removeLastOrNull() }
+                    )
+                }
                 is Screen.Expenses, is Screen.Categories, is Screen.Trends -> NavEntry(screen) {
                     HomeScreen(
                         current = screen,
@@ -34,7 +40,9 @@ fun PiggyNavigation() {
                     ) {
                         // Content for the HomeScreen
                         when (screen) {
-                            is Screen.Expenses -> ExpensesListScreen()
+                            is Screen.Expenses -> ExpensesListScreen(
+                                onNavigateToImport = { backStack.add(Screen.ImportExpenses) }
+                            )
                             is Screen.Categories -> CategoriesScreen()
                             is Screen.Trends -> TrendsScreen()
                             else -> {}
