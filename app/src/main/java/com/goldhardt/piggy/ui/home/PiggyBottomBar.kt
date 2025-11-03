@@ -33,7 +33,7 @@ fun PiggyBottomBar(
                             Screen.Expenses -> Icons.AutoMirrored.Outlined.List
                             Screen.Categories -> Icons.Outlined.Settings
                             Screen.Trends -> Icons.Outlined.Info
-                            Screen.Login -> TODO()
+                            else -> Icons.AutoMirrored.Outlined.List
                         },
                         contentDescription = screen.name
                     )

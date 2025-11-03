@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,7 +63,8 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpensesListScreen(
-    viewModel: ExpensesListViewModel = hiltViewModel()
+    viewModel: ExpensesListViewModel = hiltViewModel(),
+    onNavigateToImport: () -> Unit = {}
 ) {
     val context = LocalContext.current
     // Add expense state
@@ -75,6 +77,12 @@ fun ExpensesListScreen(
     ConfigureTopBar (
         title = stringResource(R.string.title_expenses),
         actions = {
+            IconButton(onClick = onNavigateToImport) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_upload),
+                    contentDescription = "Import expenses"
+                )
+            }
             IconButton(onClick = {
                 viewModel.refreshCategories()
                 isAddingExpense.value = true
