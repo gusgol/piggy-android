@@ -201,23 +201,30 @@ fun ExpenseEditorBottomSheet(
         }
 
         if (showDatePicker) {
+            val datePickerState = androidx.compose.material3.rememberDatePickerState(
+                initialSelectedDateMillis = try { selectedDate.toEpochMilli() } catch (_: Throwable) { null }
+            )
             androidx.compose.material3.DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
-                    Button(onClick = { showDatePicker = false }) { Text(stringResource(android.R.string.ok)) }
+                    Button(onClick = {
+                        val millis = datePickerState.selectedDateMillis
+                        if (millis != null) {
+                            // Convert UTC milliseconds to local date at start of day in system timezone
+                            selectedDate = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.of("UTC"))
+                                .toLocalDate()
+                                .atStartOfDay(ZoneId.systemDefault())
+                                .toInstant()
+                        }
+                        showDatePicker = false
+                    }) { Text(stringResource(android.R.string.ok)) }
                 },
                 dismissButton = {
                     Button(onClick = { showDatePicker = false }) { Text(stringResource(android.R.string.cancel)) }
                 }
             ) {
-                val datePickerState = androidx.compose.material3.rememberDatePickerState(
-                    initialSelectedDateMillis = try { selectedDate.toEpochMilli() } catch (_: Throwable) { null }
-                )
                 androidx.compose.material3.DatePicker(state = datePickerState)
-                val millis = datePickerState.selectedDateMillis
-                if (millis != null) {
-                    selectedDate = Instant.ofEpochMilli(millis)
-                }
             }
         }
     }
