@@ -18,9 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CardDefaults
@@ -128,7 +128,8 @@ fun ExpensesListScreen(
                     Icon(imageVector = Icons.Outlined.Search, contentDescription = null)
                 },
                 colors = TextFieldDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
@@ -142,7 +143,7 @@ fun ExpensesListScreen(
                 tonalElevation = 2.dp
             ) {
                 IconButton(onClick = {}) {
-                    Icon(imageVector = Icons.Outlined.Tune, contentDescription = "Filter")
+                    Icon(imageVector = Icons.Filled.Edit, contentDescription = "Filter")
                 }
             }
         }
