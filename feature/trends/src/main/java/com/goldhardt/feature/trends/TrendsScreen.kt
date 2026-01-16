@@ -26,6 +26,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,12 +68,31 @@ fun TrendsScreen(
     viewModel: TrendsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedRange by rememberSaveable { mutableStateOf("Month") }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
+        Text(
+            text = "Spending Analysis",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(Modifier.height(12.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            listOf("Week", "Month", "Year").forEach { label ->
+                SegmentedButton(
+                    selected = selectedRange == label,
+                    onClick = { selectedRange = label },
+                    label = { Text(label) }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         MonthSelector(
             month = state.month,
             onMonthChange = { viewModel.setMonth(it) },
@@ -106,8 +127,8 @@ fun TrendsScreen(
                 Surface(
                     modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
                     tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     Column(
                         modifier = Modifier
@@ -116,7 +137,7 @@ fun TrendsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "By category",
+                            text = "Spending Distribution",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(Modifier.height(12.dp))
@@ -155,8 +176,8 @@ fun TrendsScreen(
                 Surface(
                     modifier = Modifier.padding(top = 0.dp, bottom = 12.dp),
                     tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     Column(
                         modifier = Modifier
@@ -165,7 +186,7 @@ fun TrendsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "By day",
+                            text = "Spending Trends",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(Modifier.height(12.dp))

@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.CardDefaults
@@ -30,6 +32,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -73,6 +77,7 @@ fun ExpensesListScreen(
     // Edit expense state
     var editingExpense by remember { mutableStateOf<Expense?>(null) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var searchQuery by remember { mutableStateOf("") }
 
     ConfigureTopBar (
         title = stringResource(R.string.title_expenses),
@@ -100,6 +105,50 @@ fun ExpensesListScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
+        Text(
+            text = "My Wallet",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = stringResource(R.string.title_expenses),
+            style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text("Search transactions...") },
+                leadingIcon = {
+                    Icon(imageVector = Icons.Outlined.Search, contentDescription = null)
+                },
+                colors = TextFieldDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier.weight(1f)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 2.dp
+            ) {
+                IconButton(onClick = {}) {
+                    Icon(imageVector = Icons.Outlined.Tune, contentDescription = "Filter")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
         MonthSelector(
             month = state.month,
             onMonthChange = { viewModel.setMonth(it) },
@@ -220,13 +269,13 @@ private fun ExpenseItem(expense: Expense, onClick: () -> Unit = {}) {
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.surface
         ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CategoryAvatar(
@@ -252,11 +301,8 @@ private fun ExpenseItem(expense: Expense, onClick: () -> Unit = {}) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Row {
-                    expense.categoryName?.let {
-                        Pill(text = it)
-                    }
-                    Spacer(modifier = Modifier.width(4.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    expense.categoryName?.let { Pill(text = it) }
                     if (expense.isFixed) {
                         Pill(text = "Fixed")
                     }
@@ -278,8 +324,8 @@ private fun Pill(text: String) {
         enabled = false,
         label = { Text(text) },
         colors = AssistChipDefaults.assistChipColors(
-            disabledContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            disabledLabelColor = MaterialTheme.colorScheme.onTertiaryContainer
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
     )
 }

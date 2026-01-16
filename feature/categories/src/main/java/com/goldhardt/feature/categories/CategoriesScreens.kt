@@ -51,6 +51,8 @@ import com.goldhardt.core.data.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.Edit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,8 +91,18 @@ fun CategoriesScreen(
                 }
             }
             state.categories.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No categories yet")
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    CreateCategoryCard(onClick = { isAddingCategory.value = true })
+                    Text(
+                        text = "No categories yet",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             else -> {
@@ -99,11 +111,62 @@ fun CategoriesScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    item {
+                        CreateCategoryCard(onClick = { isAddingCategory.value = true })
+                    }
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Your Categories",
+                                style = MaterialTheme.typography.labelLarge.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = "${state.categories.size} Active",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     items(state.categories, key = { it.id }) { category ->
                         CategoryCard(
                             category = category,
-                            modifier = Modifier.clickable { editingCategory = category }
+                            modifier = Modifier,
+                            onEdit = { editingCategory = category },
+                            onDelete = { viewModel.deleteCategory(category.id) }
                         )
+                    }
+                    item {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            shape = RoundedCornerShape(24.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "💡")
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = "Tip: Swipe left on a category to delete it quickly.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -150,20 +213,37 @@ fun CategoriesScreen(
 }
 
 @Composable
-private fun CategoryCard(category: Category, modifier: Modifier = Modifier) {
+private fun CategoryCard(
+    category: Category,
+    modifier: Modifier = Modifier,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
     ElevatedCard(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onEdit() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.outlinedCardColors(
-            containerColor = MaterialTheme.colorScheme.background
+            containerColor = MaterialTheme.colorScheme.surface
         ),
     ) {
-        CategoryRow(category = category, modifier = Modifier.padding(16.dp))
+        CategoryRow(
+            category = category,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            onEdit = onEdit,
+            onDelete = onDelete
+        )
     }
 }
 
 @Composable
-private fun CategoryRow(category: Category, modifier: Modifier = Modifier) {
+private fun CategoryRow(
+    category: Category,
+    modifier: Modifier = Modifier,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -181,12 +261,75 @@ private fun CategoryRow(category: Category, modifier: Modifier = Modifier) {
             Text(text = category.icon, style = MaterialTheme.typography.titleMedium)
         }
         Spacer(Modifier.width(12.dp))
-        Text(
-            text = category.name,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "Tap to edit details",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onEdit) {
+            Icon(imageVector = Icons.Outlined.Edit, contentDescription = "Edit")
+        }
+        IconButton(onClick = onDelete) {
+            Icon(imageVector = Icons.Outlined.Delete, contentDescription = "Delete")
+        }
+    }
+}
+
+@Composable
+private fun CreateCategoryCard(onClick: () -> Unit) {
+    ElevatedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = "Create new category",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Create New Category",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
+                Text(
+                    text = "Customise your spending buckets",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
