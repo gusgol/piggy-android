@@ -26,6 +26,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -57,7 +60,11 @@ import kotlin.math.sqrt
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.TextStyle
 
 @Composable
@@ -66,12 +73,32 @@ fun TrendsScreen(
     viewModel: TrendsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    var selectedRange by rememberSaveable { mutableStateOf("Month") }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
+        Text(
+            text = "Spending Analysis",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Spacer(Modifier.height(12.dp))
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            listOf("Week", "Month", "Year").forEachIndexed { index, label ->
+                SegmentedButton(
+                    selected = selectedRange == label,
+                    onClick = { selectedRange = label },
+                    label = { Text(label) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = 3)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
         MonthSelector(
             month = state.month,
             onMonthChange = { viewModel.setMonth(it) },
@@ -106,8 +133,8 @@ fun TrendsScreen(
                 Surface(
                     modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
                     tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     Column(
                         modifier = Modifier
@@ -116,7 +143,7 @@ fun TrendsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "By category",
+                            text = "Spending Distribution",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(Modifier.height(12.dp))
@@ -155,8 +182,8 @@ fun TrendsScreen(
                 Surface(
                     modifier = Modifier.padding(top = 0.dp, bottom = 12.dp),
                     tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.surface,
                 ) {
                     Column(
                         modifier = Modifier
@@ -165,7 +192,7 @@ fun TrendsScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "By day",
+                            text = "Spending Trends",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                         )
                         Spacer(Modifier.height(12.dp))
@@ -250,9 +277,9 @@ private fun SimplePieChart(
                 startAngle = startAngle,
                 sweepAngle = sweep,
                 useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(left, top),
-                size = androidx.compose.ui.geometry.Size(diameter, diameter),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke.toPx())
+                topLeft = Offset(left, top),
+                size = Size(diameter, diameter),
+                style = Stroke(width = stroke.toPx())
             )
             startAngle += sweep
         }
@@ -390,7 +417,7 @@ private fun DailyStackedBarChart(
     chartHeight: Dp,
     barWidth: Dp,
     barSpacing: Dp,
-    yearMonth: java.time.YearMonth,
+    yearMonth: YearMonth,
 ) {
     val maxTotal = stacks.maxOfOrNull { day -> day.pieces.sumOf { it.amount } }?.coerceAtLeast(0.0001) ?: 0.0001
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -408,7 +435,7 @@ private fun DailyStackedBarChart(
 
 @Composable
 private fun DayBar(
-    yearMonth: java.time.YearMonth,
+    yearMonth: YearMonth,
     stack: DayStackUi,
     maxTotal: Double,
     chartHeight: Dp,
