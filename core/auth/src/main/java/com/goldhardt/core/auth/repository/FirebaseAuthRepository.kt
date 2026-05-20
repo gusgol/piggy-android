@@ -1,5 +1,6 @@
 package com.goldhardt.core.auth.repository
 
+import android.app.Activity
 import com.goldhardt.core.auth.config.AuthConfig
 import com.goldhardt.core.auth.google.GoogleSignInHelper
 import com.goldhardt.core.auth.model.User
@@ -32,12 +33,13 @@ class FirebaseAuthRepository @Inject constructor(
         awaitClose { firebaseAuth.removeAuthStateListener(listener) }
     }
 
-    override suspend fun signIn(): Result<User> {
+    override suspend fun signIn(activity: Activity): Result<User> {
         return try {
             val webClientId = authConfig.getWebClientId()
             val nonce = generateNonce()
 
             val idTokenResult = googleSignInHelper.signIn(
+                activity = activity,
                 webClientId = webClientId,
                 nonce = nonce
             )

@@ -1,5 +1,6 @@
 package com.goldhardt.auth
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.auth.repository.AuthRepository
@@ -20,11 +21,11 @@ class LoginViewModel @Inject constructor(
 
     val authState = authRepository.authState()
 
-    fun signIn() {
+    fun signIn(activity: Activity) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            val result = authRepository.signIn()
+            val result = authRepository.signIn(activity)
 
             _uiState.value = if (result.isSuccess) {
                 _uiState.value.copy(

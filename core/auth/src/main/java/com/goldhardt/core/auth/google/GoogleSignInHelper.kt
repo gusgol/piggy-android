@@ -1,14 +1,17 @@
 package com.goldhardt.core.auth.google
 
+import android.app.Activity
 import android.content.Context
 import android.util.Log
-import androidx.credentials.CredentialManager
 import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import androidx.credentials.exceptions.NoCredentialException
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -21,8 +24,9 @@ class GoogleSignInHelper @Inject constructor(
     private val credentialManager = CredentialManager.create(context)
 
 
-    suspend fun signIn(webClientId: String, nonce: String): Result<String> {
+    suspend fun signIn(activity: Activity, webClientId: String, nonce: String): Result<String> {
         return try {
+            // 1. Try with authorized accounts first (Bottom Sheet flow)
             val authorizedAccountsOption = GetGoogleIdOption.Builder()
                 .setServerClientId(webClientId)
                 .setFilterByAuthorizedAccounts(true)
@@ -37,36 +41,34 @@ class GoogleSignInHelper @Inject constructor(
             try {
                 val result = credentialManager.getCredential(
                     request = authorizedRequest,
-                    context = context
+                    context = activity
                 )
                 Log.d(TAG, "Sign in successful with authorized account")
-                val idToken = handleSignInResult(result)
-                Result.success(idToken)
-            } catch (e: NoCredentialException) {
-                Log.d(TAG, "No authorized accounts found, trying without filter ${e.message}")
+                Result.success(handleSignInResult(result))
+            } catch (_: NoCredentialException) {
+                Log.d(TAG, "No authorized accounts found, showing full account picker")
 
-                // If no authorized accounts, try without filter
-                val allAccountsOption = GetGoogleIdOption.Builder()
-                    .setServerClientId(webClientId)
-                    .setFilterByAuthorizedAccounts(false)
+                // 2. Fallback to full account picker (Button flow)
+                val signInWithGoogleOption = GetSignInWithGoogleOption.Builder(webClientId)
                     .setNonce(nonce)
-                    .setAutoSelectEnabled(false)
                     .build()
 
                 val allAccountsRequest = GetCredentialRequest.Builder()
-                    .addCredentialOption(allAccountsOption)
+                    .addCredentialOption(signInWithGoogleOption)
                     .build()
 
                 val result = credentialManager.getCredential(
                     request = allAccountsRequest,
-                    context = context
+                    context = activity
                 )
                 Log.d(TAG, "Sign in successful with account selection")
-                val idToken = handleSignInResult(result)
-                Result.success(idToken)
+                Result.success(handleSignInResult(result))
             }
+        } catch (e: GetCredentialCancellationException) {
+            Log.d(TAG, "Sign in cancelled by user")
+            Result.failure(e)
         } catch (e: GetCredentialException) {
-            Log.e(TAG, "Sign in failed", e)
+            Log.e(TAG, "Sign in failed: ${e.message}", e)
             Result.failure(e)
         } catch (e: Exception) {
             Log.e(TAG, "Unexpected error during sign in", e)

@@ -1,5 +1,6 @@
 package com.goldhardt.auth
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +45,8 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val authState by viewModel.authState.collectAsStateWithLifecycle(initialValue = null)
 
+    val context = LocalContext.current
+
     LaunchedEffect(authState) {
         if (authState != null) {
             onSignInSuccess()
@@ -59,7 +63,11 @@ fun LoginScreen(
         modifier = modifier,
         isLoading = uiState.isLoading,
         error = uiState.error,
-        onGoogleSignInClick = { viewModel.signIn() },
+        onGoogleSignInClick = {
+            (context as? Activity)?.let { activity ->
+                viewModel.signIn(activity)
+            }
+        },
         onErrorDismiss = { viewModel.clearError() }
     )
 }
