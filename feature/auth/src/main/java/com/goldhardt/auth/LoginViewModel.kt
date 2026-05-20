@@ -3,6 +3,8 @@ package com.goldhardt.auth
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.credentials.exceptions.GetCredentialCancellationException
+import com.goldhardt.core.auth.google.GoogleSignInLauncher
 import com.goldhardt.core.auth.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val googleSignInLauncher: GoogleSignInLauncher,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -25,17 +28,32 @@ class LoginViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            val result = authRepository.signIn(activity)
+            val googleResult = googleSignInLauncher.signIn(activity)
 
-            _uiState.value = if (result.isSuccess) {
-                _uiState.value.copy(
-                    isLoading = false,
-                    error = null
-                )
+            if (googleResult.isSuccess) {
+                val idToken = googleResult.getOrThrow()
+                val firebaseResult = authRepository.signInWithGoogle(idToken)
+
+                _uiState.value = if (firebaseResult.isSuccess) {
+                    _uiState.value.copy(isLoading = false, error = null)
+                } else {
+                    _uiState.value.copy(
+                        isLoading = false,
+                        error = firebaseResult.exceptionOrNull()?.message ?: "Firebase sign in failed"
+                    )
+                }
             } else {
-                _uiState.value.copy(
+                val exception = googleResult.exceptionOrNull()
+                // Don't show error if user just cancelled
+                val errorMessage = if (exception is GetCredentialCancellationException) {
+                    null
+                } else {
+                    exception?.message ?: "Google sign in failed"
+                }
+
+                _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    error = result.exceptionOrNull()?.message ?: "Sign in failed"
+                    error = errorMessage
                 )
             }
         }
@@ -47,10 +65,7 @@ class LoginViewModel @Inject constructor(
 
             try {
                 authRepository.signOut()
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    error = null
-                )
+                _uiState.value = _uiState.value.copy(isLoading = false, error = null)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,

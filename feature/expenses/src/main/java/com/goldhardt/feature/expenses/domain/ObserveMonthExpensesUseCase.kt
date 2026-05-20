@@ -1,6 +1,6 @@
 package com.goldhardt.feature.expenses.domain
 
-import com.goldhardt.core.auth.repository.AuthRepository
+import com.goldhardt.core.auth.session.UserSession
 import com.goldhardt.core.data.model.Expense
 import com.goldhardt.core.data.repository.CategoryRepository
 import com.goldhardt.core.data.repository.ExpenseRepository
@@ -16,13 +16,13 @@ import javax.inject.Inject
 class ObserveMonthExpensesUseCase @Inject constructor(
     private val expenseRepository: ExpenseRepository,
     private val categoryRepository: CategoryRepository,
-    private val authRepository: AuthRepository,
+    private val userSession: UserSession,
 ) {
     operator fun invoke(
         month: YearMonth,
         categoryId: String? = null,
     ): Flow<List<Expense>> {
-        return authRepository.authState().flatMapLatest { user ->
+        return userSession.authState.flatMapLatest { user ->
             val uid = user?.id
             if (uid == null) {
                 flowOf(emptyList())

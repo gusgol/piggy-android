@@ -1,7 +1,5 @@
 package com.goldhardt.core.auth.repository
 
-import android.app.Activity
-import com.goldhardt.core.auth.config.AuthConfig
 import com.goldhardt.core.auth.google.GoogleSignInHelper
 import com.goldhardt.core.auth.model.User
 import com.google.firebase.auth.FirebaseAuth
@@ -11,7 +9,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import java.security.SecureRandom
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +16,6 @@ import javax.inject.Singleton
 class FirebaseAuthRepository @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val googleSignInHelper: GoogleSignInHelper,
-    private val authConfig: AuthConfig
 ) : AuthRepository {
 
     override val currentUser: User?
@@ -33,24 +29,8 @@ class FirebaseAuthRepository @Inject constructor(
         awaitClose { firebaseAuth.removeAuthStateListener(listener) }
     }
 
-    override suspend fun signIn(activity: Activity): Result<User> {
+    override suspend fun signInWithGoogle(idToken: String): Result<User> {
         return try {
-            val webClientId = authConfig.getWebClientId()
-            val nonce = generateNonce()
-
-            val idTokenResult = googleSignInHelper.signIn(
-                activity = activity,
-                webClientId = webClientId,
-                nonce = nonce
-            )
-
-            if (idTokenResult.isFailure) {
-                return Result.failure(
-                    idTokenResult.exceptionOrNull() ?: Exception("Google Sign-In failed")
-                )
-            }
-
-            val idToken = idTokenResult.getOrThrow()
             val credential = GoogleAuthProvider.getCredential(idToken, null)
             val result = firebaseAuth.signInWithCredential(credential).await()
 
@@ -67,7 +47,6 @@ class FirebaseAuthRepository @Inject constructor(
             googleSignInHelper.signOut()
             firebaseAuth.signOut()
         } catch (e: Exception) {
-            // Even if Google sign out fails, continue with Firebase sign out
             firebaseAuth.signOut()
             throw e
         }
@@ -81,16 +60,5 @@ class FirebaseAuthRepository @Inject constructor(
             photoUrl = photoUrl?.toString(),
             isEmailVerified = isEmailVerified
         )
-    }
-
-    private fun generateNonce(length: Int = 32): String {
-        val random = SecureRandom()
-        val bytes = ByteArray(length)
-        random.nextBytes(bytes)
-        return bytes.toHex()
-    }
-
-    private fun ByteArray.toHex(): String {
-        return joinToString("") { "%02x".format(it) }
     }
 }
