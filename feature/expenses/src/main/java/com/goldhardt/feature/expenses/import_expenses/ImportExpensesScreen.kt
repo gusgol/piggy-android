@@ -70,7 +70,7 @@ fun ImportExpensesScreen(
     viewModel: ImportViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit = {},
 ) {
-    val context = LocalContext.current
+    val context = LocalContext.current.applicationContext
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     ConfigureTopBar(
@@ -90,8 +90,8 @@ fun ImportExpensesScreen(
         ImportStep.SELECT_FILE -> {
             SelectFileStep(
                 onFileSelected = { uri ->
-                    context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                        viewModel.parseCsvFile(inputStream)
+                    viewModel.parseCsvFile {
+                        context.contentResolver.openInputStream(uri)
                     }
                 },
                 isLoading = state.isLoading,

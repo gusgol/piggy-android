@@ -10,13 +10,15 @@ import com.goldhardt.feature.expenses.import_expenses.domain.ImportExpensesUseCa
 import com.goldhardt.feature.expenses.import_expenses.domain.ImportResult
 import com.goldhardt.feature.expenses.import_expenses.domain.ImportedExpense
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.InputStream
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.InputStream
-import javax.inject.Inject
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
@@ -43,11 +45,21 @@ class ImportViewModel @Inject constructor(
         }
     }
 
-    fun parseCsvFile(inputStream: InputStream) {
+    fun parseCsvFile(openStream: () -> InputStream?) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            when (val result = csvParser.parse(inputStream)) {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    openStream()?.use { inputStream ->
+                        csvParser.parse(inputStream)
+                    } ?: CsvParseResult.Error("Failed to open CSV file")
+                } catch (e: Exception) {
+                    CsvParseResult.Error("Failed to open CSV file: ${e.message}")
+                }
+            }
+
+            when (result) {
                 is CsvParseResult.Success -> {
                     _uiState.update {
                         it.copy(

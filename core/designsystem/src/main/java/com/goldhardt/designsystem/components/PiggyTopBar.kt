@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -48,10 +49,12 @@ class TopBarController {
 @Composable
 fun ConfigureTopBar(
     title: String?,
-    actions: @Composable RowScope.() -> Unit
+    actions: @Composable RowScope.() -> Unit = {}
 ) {
     val topBar = LocalTopBarController.current
-    topBar.set(title, actions)
+    SideEffect {
+        topBar.set(title, actions)
+    }
 }
 
 val LocalTopBarController = staticCompositionLocalOf<TopBarController> {

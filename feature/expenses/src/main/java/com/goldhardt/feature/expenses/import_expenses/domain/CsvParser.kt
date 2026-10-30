@@ -5,6 +5,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * Parses CSV files in the format:
@@ -15,13 +17,13 @@ class CsvParser @Inject constructor() {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    fun parse(inputStream: InputStream): CsvParseResult {
-        return try {
+    suspend fun parse(inputStream: InputStream): CsvParseResult = withContext(Dispatchers.IO) {
+        try {
             val expenses = mutableListOf<ImportedExpense>()
-            val lines = inputStream.bufferedReader().readLines()
+            val lines = inputStream.bufferedReader().use { it.readLines() }
 
             if (lines.isEmpty()) {
-                return CsvParseResult.Error("CSV file is empty")
+                return@withContext CsvParseResult.Error("CSV file is empty")
             }
 
             // Skip header (first line)
@@ -34,7 +36,7 @@ class CsvParser @Inject constructor() {
                     val expense = parseLine(line)
                     expenses.add(expense)
                 } catch (e: Exception) {
-                    return CsvParseResult.Error(
+                    return@withContext CsvParseResult.Error(
                         "Error parsing line ${index + 2}: ${e.message}"
                     )
                 }

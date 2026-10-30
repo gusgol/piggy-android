@@ -53,12 +53,6 @@ fun LoginScreen(
         }
     }
 
-    uiState.error?.let { error ->
-        LaunchedEffect(error) {
-            viewModel.clearError()
-        }
-    }
-
     LoginScreenContent(
         modifier = modifier,
         isLoading = uiState.isLoading,
