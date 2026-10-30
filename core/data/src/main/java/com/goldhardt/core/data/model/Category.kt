@@ -1,14 +1,15 @@
 package com.goldhardt.core.data.model
 
 import com.google.firebase.Timestamp
+import java.time.Instant
 
 /**
- * Data model representing a category as stored/fetched from Firestore.
+ * Domain model representing a category. Firebase-agnostic.
  */
 data class Category(
     val id: String,
     val name: String,
-    val createdAt: Timestamp, // TODO leaking firebase details.
+    val createdAt: Instant,
     val userId: String,
     val icon: String,
     val color: String,

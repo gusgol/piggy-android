@@ -21,6 +21,8 @@ interface ExpenseRepository {
 
     suspend fun addExpense(userId: String, form: ExpenseFormData): Expense
 
+    suspend fun addExpenses(userId: String, forms: List<ExpenseFormData>): List<Expense>
+
     suspend fun updateExpense(expenseId: String, update: ExpenseUpdate)
 
     suspend fun deleteExpense(expenseId: String)

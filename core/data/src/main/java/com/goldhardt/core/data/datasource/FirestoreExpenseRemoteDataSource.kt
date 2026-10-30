@@ -33,20 +33,21 @@ class FirestoreExpenseRemoteDataSource @Inject constructor(
         const val FIELD_CATEGORY_ID = "categoryId"
         const val FIELD_IS_FIXED = "isFixed"
         const val FIELD_CREATED_AT = "createdAt"
+        const val FIRESTORE_BATCH_LIMIT = 500
     }
 
     private fun Instant.toTimestamp(): Timestamp = Timestamp(epochSecond, nano)
 
     override fun observeExpenses(
         userId: String,
-        startAt: Timestamp,
-        endAt: Timestamp,
+        startAt: Instant,
+        endAt: Instant,
         categoryId: String?,
     ): Flow<List<Expense>> = callbackFlow {
         var q: Query = firestore.collection(COLLECTION)
             .whereEqualTo(FIELD_USER_ID, userId)
-            .whereGreaterThanOrEqualTo(FIELD_DATE, startAt)
-            .whereLessThanOrEqualTo(FIELD_DATE, endAt)
+            .whereGreaterThanOrEqualTo(FIELD_DATE, startAt.toTimestamp())
+            .whereLessThanOrEqualTo(FIELD_DATE, endAt.toTimestamp())
             .orderBy(FIELD_DATE, Query.Direction.DESCENDING)
 
         if (!categoryId.isNullOrEmpty()) {
@@ -55,7 +56,7 @@ class FirestoreExpenseRemoteDataSource @Inject constructor(
 
         val registration = q.addSnapshotListener { snap: QuerySnapshot?, err: FirebaseFirestoreException? ->
             if (err != null) {
-                trySend(emptyList())
+                close(err)
                 return@addSnapshotListener
             }
             val expenses = mapExpenses(snap)
@@ -66,14 +67,14 @@ class FirestoreExpenseRemoteDataSource @Inject constructor(
 
     override suspend fun getExpenses(
         userId: String,
-        startAt: Timestamp,
-        endAt: Timestamp,
+        startAt: Instant,
+        endAt: Instant,
         categoryId: String?,
     ): List<Expense> {
         var q: Query = firestore.collection(COLLECTION)
             .whereEqualTo(FIELD_USER_ID, userId)
-            .whereGreaterThanOrEqualTo(FIELD_DATE, startAt)
-            .whereLessThanOrEqualTo(FIELD_DATE, endAt)
+            .whereGreaterThanOrEqualTo(FIELD_DATE, startAt.toTimestamp())
+            .whereLessThanOrEqualTo(FIELD_DATE, endAt.toTimestamp())
             .orderBy(FIELD_DATE, Query.Direction.DESCENDING)
 
         if (!categoryId.isNullOrEmpty()) {
@@ -96,18 +97,53 @@ class FirestoreExpenseRemoteDataSource @Inject constructor(
             FIELD_CREATED_AT to FieldValue.serverTimestamp(),
         )
         docRef.set(data).await()
-        val snap = docRef.get().await()
-        val doc = snap.toObject(ExpenseDocument::class.java)
         return Expense(
-            id = snap.id,
-            name = doc?.name ?: form.name,
-            amount = doc?.amount ?: form.amount,
-            date = (doc?.date ?: form.date.toTimestamp()).toInstant(),
-            categoryId = doc?.categoryId ?: form.categoryId,
-            isFixed = doc?.isFixed ?: form.isFixed,
-            createdAt = (doc?.createdAt ?: Timestamp.now()).toInstant(),
-            userId = doc?.userId ?: userId,
+            id = docRef.id,
+            name = form.name,
+            amount = form.amount,
+            date = form.date,
+            categoryId = form.categoryId,
+            isFixed = form.isFixed,
+            createdAt = Instant.now(),
+            userId = userId,
         )
+    }
+
+    override suspend fun addExpenses(userId: String, forms: List<ExpenseFormData>): List<Expense> {
+        if (forms.isEmpty()) return emptyList()
+        val createdAt = Instant.now()
+        val createdExpenses = mutableListOf<Expense>()
+
+        forms.chunked(FIRESTORE_BATCH_LIMIT).forEach { chunk ->
+            val batch = firestore.batch()
+            val chunkModels = chunk.map { form ->
+                val docRef = firestore.collection(COLLECTION).document()
+                val data = hashMapOf<String, Any?>(
+                    FIELD_NAME to form.name,
+                    FIELD_AMOUNT to form.amount,
+                    FIELD_DATE to form.date.toTimestamp(),
+                    FIELD_CATEGORY_ID to form.categoryId,
+                    FIELD_IS_FIXED to form.isFixed,
+                    FIELD_USER_ID to userId,
+                    FIELD_CREATED_AT to FieldValue.serverTimestamp(),
+                )
+                batch.set(docRef, data)
+                Expense(
+                    id = docRef.id,
+                    name = form.name,
+                    amount = form.amount,
+                    date = form.date,
+                    categoryId = form.categoryId,
+                    isFixed = form.isFixed,
+                    createdAt = createdAt,
+                    userId = userId,
+                )
+            }
+            batch.commit().await()
+            createdExpenses.addAll(chunkModels)
+        }
+
+        return createdExpenses
     }
 
     override suspend fun updateExpense(expenseId: String, update: ExpenseUpdate) {

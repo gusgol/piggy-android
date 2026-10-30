@@ -2,18 +2,18 @@ package com.goldhardt.core.data.datasource
 
 import com.goldhardt.core.data.model.Category
 import com.goldhardt.core.data.model.CategoryDocument
-import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.QuerySnapshot
 import com.google.firebase.firestore.SetOptions
+import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class FirestoreCategoryRemoteDataSource @Inject constructor(
@@ -35,7 +35,7 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
             .orderBy(FIELD_NAME)
             .addSnapshotListener { snap: QuerySnapshot?, err: FirebaseFirestoreException? ->
                 if (err != null) {
-                    trySend(emptyList())
+                    close(err)
                     return@addSnapshotListener
                 }
                 trySend(mapCategories(snap))
@@ -75,13 +75,10 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
             FIELD_CREATED_AT to FieldValue.serverTimestamp(),
         )
         docRef.set(data).await()
-        // Read back the document to get resolved server timestamp
-        val snap = docRef.get().await()
-        val createdAt = snap.getTimestamp(FIELD_CREATED_AT) ?: Timestamp.now()
         return Category(
-            id = snap.id,
+            id = docRef.id,
             name = name,
-            createdAt = createdAt,
+            createdAt = Instant.now(),
             userId = userId,
             icon = icon,
             color = color,
@@ -100,11 +97,11 @@ class FirestoreCategoryRemoteDataSource @Inject constructor(
         return snap.documents.mapNotNull { doc ->
             val data = doc.toObject(CategoryDocument::class.java)
             val name = data?.name
-            val createdAt = data?.createdAt
+            val createdAt = data?.createdAt?.toInstant() ?: Instant.now()
             val userId = data?.userId
             val icon = data?.icon
             val color = data?.color
-            if (name == null || createdAt == null || userId == null || icon == null || color == null) {
+            if (name == null || userId == null || icon == null || color == null) {
                 null
             } else {
                 Category(

@@ -1,21 +1,34 @@
 package com.goldhardt.piggy.navigation
 
-sealed interface Screen {
+import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
+
+@Serializable
+sealed interface Screen : NavKey {
     val name: String
 
-    object Expenses : Screen {
+    @Serializable
+    data object Expenses : Screen {
         override val name: String = "Expenses"
     }
-    object Categories : Screen {
+
+    @Serializable
+    data object Categories : Screen {
         override val name: String = "Categories"
     }
-    object Trends : Screen {
+
+    @Serializable
+    data object Trends : Screen {
         override val name: String = "Trends"
     }
-    object Login : Screen {
+
+    @Serializable
+    data object Login : Screen {
         override val name: String = "Login"
     }
-    object ImportExpenses : Screen {
+
+    @Serializable
+    data object ImportExpenses : Screen {
         override val name: String = "Import"
     }
 }

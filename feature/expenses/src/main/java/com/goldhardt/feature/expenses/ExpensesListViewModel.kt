@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -30,6 +31,7 @@ data class UiState(
     val expenses: List<Expense> = emptyList(),
     val total: Double = 0.0,
     val isLoading: Boolean = true,
+    val error: String? = null,
 )
 
 @HiltViewModel
@@ -52,6 +54,7 @@ class ExpensesListViewModel @Inject constructor(
             .flatMapLatest { month ->
                 observeMonthExpenses(month)
                     .map { expenses -> createUiState(month, expenses, isLoading = false) }
+                    .catch { e -> emit(createUiState(month, isLoading = false, error = e.message)) }
             }
             .stateIn(
                 scope = viewModelScope,
@@ -121,13 +124,15 @@ class ExpensesListViewModel @Inject constructor(
     private fun createUiState(
         month: YearMonth,
         expenses: List<Expense> = emptyList(),
-        isLoading: Boolean = false
+        isLoading: Boolean = false,
+        error: String? = null,
     ): UiState {
         return UiState(
             month = month,
             expenses = expenses,
             total = expenses.sumOf { it.amount },
             isLoading = isLoading,
+            error = error,
         )
     }
 

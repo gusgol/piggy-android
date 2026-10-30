@@ -9,6 +9,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -55,6 +56,8 @@ class TrendsViewModel @Inject constructor(
                             )
                         }
                     )
+                }.catch { e ->
+                    emit(TrendsUiState(month = month, isLoading = false, error = e.message))
                 }
             }
             .stateIn(
@@ -75,6 +78,7 @@ data class TrendsUiState(
     val slices: List<CategorySliceUi> = emptyList(),
     val categories: List<CategoryGroupUi> = emptyList(),
     val dayStacks: List<DayStackUi> = emptyList(),
+    val error: String? = null,
 )
 
 data class CategorySliceUi(

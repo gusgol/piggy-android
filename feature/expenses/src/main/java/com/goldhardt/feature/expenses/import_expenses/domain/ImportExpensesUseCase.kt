@@ -19,48 +19,47 @@ class ImportExpensesUseCase @Inject constructor(
         val user = authRepository.currentUser
             ?: return ImportResult.Error("User must be signed in")
 
-        val successfulImports = mutableListOf<String>()
+        val validForms = mutableListOf<ExpenseFormData>()
         val failures = mutableListOf<ImportFailure>()
 
-        expenses.forEachIndexed { index, importedExpense ->
-            try {
-                // Validate that category is assigned
-                if (importedExpense.categoryId == null) {
-                    failures.add(ImportFailure(
+        expenses.forEach { importedExpense ->
+            if (importedExpense.categoryId == null) {
+                failures.add(
+                    ImportFailure(
                         expense = importedExpense,
                         reason = "Category not assigned"
-                    ))
-                } else {
-                    val formData = ExpenseFormData(
+                    )
+                )
+            } else {
+                validForms.add(
+                    ExpenseFormData(
                         name = importedExpense.name,
                         amount = importedExpense.amount,
                         date = importedExpense.date,
                         categoryId = importedExpense.categoryId,
                         isFixed = importedExpense.isFixed
                     )
-
-                    val expense = expenseRepository.addExpense(user.id, formData)
-                    successfulImports.add(expense.id)
-                }
-            } catch (e: Exception) {
-                failures.add(ImportFailure(
-                    expense = importedExpense,
-                    reason = e.message ?: "Unknown error"
-                ))
+                )
             }
-
-            onProgress(index + 1, expenses.size)
         }
 
-        return if (failures.isEmpty()) {
-            ImportResult.Success(successfulImports.size)
-        } else if (successfulImports.isEmpty()) {
-            ImportResult.Error("All imports failed")
-        } else {
-            ImportResult.PartialSuccess(
-                successCount = successfulImports.size,
-                failures = failures
-            )
+        if (validForms.isEmpty()) {
+            return ImportResult.Error("All imports failed")
+        }
+
+        return try {
+            val created = expenseRepository.addExpenses(user.id, validForms)
+            onProgress(expenses.size, expenses.size)
+            if (failures.isEmpty()) {
+                ImportResult.Success(created.size)
+            } else {
+                ImportResult.PartialSuccess(
+                    successCount = created.size,
+                    failures = failures
+                )
+            }
+        } catch (e: Exception) {
+            ImportResult.Error(e.message ?: "Batch import failed")
         }
     }
 }
