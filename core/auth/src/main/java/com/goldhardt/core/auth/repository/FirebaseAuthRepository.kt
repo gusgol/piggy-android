@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
@@ -37,6 +38,8 @@ class FirebaseAuthRepository @Inject constructor(
             result.user?.toUser()?.let {
                 Result.success(it)
             } ?: Result.failure(Exception("Firebase authentication failed - no user returned"))
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -46,6 +49,8 @@ class FirebaseAuthRepository @Inject constructor(
         try {
             googleSignInHelper.signOut()
             firebaseAuth.signOut()
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             firebaseAuth.signOut()
             throw e

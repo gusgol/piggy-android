@@ -9,6 +9,7 @@ import com.goldhardt.feature.categories.domain.ObserveUserCategoriesUseCase
 import com.goldhardt.feature.categories.domain.UpdateCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,8 +39,8 @@ class CategoriesViewModel @Inject constructor(
             .combine(mutationError) { categories, error ->
                 UiState(isLoading = false, categories = categories, error = error)
             }
-            .catch { e ->
-                emit(UiState(isLoading = false, error = e.message))
+            .catch {
+                emit(UiState(isLoading = false, error = "Couldn't load categories. Please try again."))
             }
             .stateIn(
                 scope = viewModelScope,
@@ -52,8 +53,10 @@ class CategoriesViewModel @Inject constructor(
             try {
                 mutationError.value = null
                 updateCategoryUseCase(category)
-            } catch (e: Exception) {
-                mutationError.value = e.message
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't update category. Please try again."
             }
         }
     }
@@ -63,8 +66,10 @@ class CategoriesViewModel @Inject constructor(
             try {
                 mutationError.value = null
                 addCategoryUseCase(name, icon, color)
-            } catch (e: Exception) {
-                mutationError.value = e.message
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't add category. Please try again."
             }
         }
     }
@@ -74,8 +79,10 @@ class CategoriesViewModel @Inject constructor(
             try {
                 mutationError.value = null
                 deleteCategoryUseCase(categoryId)
-            } catch (e: Exception) {
-                mutationError.value = e.message
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't delete category. Please try again."
             }
         }
     }

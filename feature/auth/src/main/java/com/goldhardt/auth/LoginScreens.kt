@@ -22,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,18 +39,10 @@ import com.goldhardt.designsystem.theme.PiggyTheme
 fun LoginScreen(
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = hiltViewModel(),
-    onSignInSuccess: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val authState by viewModel.authState.collectAsStateWithLifecycle(initialValue = null)
 
     val context = LocalContext.current
-
-    LaunchedEffect(authState) {
-        if (authState != null) {
-            onSignInSuccess()
-        }
-    }
 
     LoginScreenContent(
         modifier = modifier,

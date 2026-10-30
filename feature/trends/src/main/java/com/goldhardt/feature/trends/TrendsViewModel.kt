@@ -2,6 +2,8 @@ package com.goldhardt.feature.trends
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.goldhardt.feature.trends.domain.DayStack
+import com.goldhardt.feature.trends.domain.Slice
 import com.goldhardt.feature.trends.domain.ObserveMonthlyTrendsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -13,13 +15,19 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import java.time.ZoneId
 import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class TrendsViewModel @Inject constructor(
     private val observeMonthlyTrends: ObserveMonthlyTrendsUseCase
 ) : ViewModel() {
+
+    private val expenseDateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault())
+        .withZone(ZoneId.systemDefault())
 
     private val selectedMonth = MutableStateFlow(YearMonth.now())
 
@@ -31,7 +39,7 @@ class TrendsViewModel @Inject constructor(
                         month = month,
                         isLoading = false,
                         total = trends.total,
-                        slices = trends.slices.map { CategorySliceUi(it.categoryId, it.name, it.colorHex, it.total) },
+                        slices = trends.slices,
                         categories = trends.categories.map { cat ->
                             CategoryGroupUi(
                                 id = cat.id,
@@ -39,25 +47,19 @@ class TrendsViewModel @Inject constructor(
                                 icon = cat.icon,
                                 colorHex = cat.colorHex,
                                 total = cat.total,
-                                count = cat.items.size,
                                 items = cat.items.map { item ->
                                     CategoryExpenseItemUi(
                                         name = item.name,
                                         amount = item.amount,
-                                        dateLabel = item.dateLabel,
+                                        dateLabel = expenseDateFormatter.format(item.date),
                                     )
                                 }
                             )
                         },
-                        dayStacks = trends.dayStacks.map { day ->
-                            DayStackUi(
-                                day = day.day,
-                                pieces = day.pieces.map { p -> DayPieceUi(categoryId = p.categoryId, amount = p.amount, colorHex = p.colorHex) }
-                            )
-                        }
+                        dayStacks = trends.dayStacks
                     )
-                }.catch { e ->
-                    emit(TrendsUiState(month = month, isLoading = false, error = e.message))
+                }.catch {
+                    emit(TrendsUiState(month = month, isLoading = false, error = "Couldn't load trends. Please try again."))
                 }
             }
             .stateIn(
@@ -75,30 +77,10 @@ data class TrendsUiState(
     val month: YearMonth = YearMonth.now(),
     val isLoading: Boolean = true,
     val total: Double = 0.0,
-    val slices: List<CategorySliceUi> = emptyList(),
+    val slices: List<Slice> = emptyList(),
     val categories: List<CategoryGroupUi> = emptyList(),
-    val dayStacks: List<DayStackUi> = emptyList(),
+    val dayStacks: List<DayStack> = emptyList(),
     val error: String? = null,
-)
-
-data class CategorySliceUi(
-    val categoryId: String,
-    val categoryName: String,
-    val colorHex: String?,
-    val amount: Double,
-)
-
-// Daily stacked bars UI models
-
-data class DayStackUi(
-    val day: Int,
-    val pieces: List<DayPieceUi>,
-)
-
-data class DayPieceUi(
-    val categoryId: String,
-    val amount: Double,
-    val colorHex: String?,
 )
 
 data class CategoryGroupUi(
@@ -107,7 +89,6 @@ data class CategoryGroupUi(
     val icon: String,
     val colorHex: String?,
     val total: Double,
-    val count: Int,
     val items: List<CategoryExpenseItemUi>,
 )
 

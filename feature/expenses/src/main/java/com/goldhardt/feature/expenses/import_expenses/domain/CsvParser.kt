@@ -6,6 +6,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 /**
@@ -35,6 +36,8 @@ class CsvParser @Inject constructor() {
                 try {
                     val expense = parseLine(line)
                     expenses.add(expense)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     return@withContext CsvParseResult.Error(
                         "Error parsing line ${index + 2}: ${e.message}"
@@ -47,8 +50,10 @@ class CsvParser @Inject constructor() {
             } else {
                 CsvParseResult.Success(expenses)
             }
-        } catch (e: Exception) {
-            CsvParseResult.Error("Failed to read CSV: ${e.message}")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            CsvParseResult.Error("Unable to read the CSV file.")
         }
     }
 

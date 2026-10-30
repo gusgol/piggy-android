@@ -112,28 +112,38 @@ internal fun CategoriesScreenContent(
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Surface(modifier = modifier.fillMaxSize()) {
-        when {
-            state.isLoading && state.categories.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
+        Column(modifier = Modifier.fillMaxSize()) {
+            state.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
             }
-            state.categories.isEmpty() -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(text = "No categories yet")
+            when {
+                state.isLoading && state.categories.isEmpty() -> {
+                    Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
                 }
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.categories, key = { it.id }) { category ->
-                        CategoryCard(
-                            category = category,
-                            onClick = { editingCategory = category }
-                        )
+                state.categories.isEmpty() -> {
+                    Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "No categories yet")
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(state.categories, key = { it.id }) { category ->
+                            CategoryCard(
+                                category = category,
+                                onClick = { editingCategory = category }
+                            )
+                        }
                     }
                 }
             }

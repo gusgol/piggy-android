@@ -32,7 +32,7 @@ import com.goldhardt.piggy.navigation.Screen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    user: User?,
+    user: User,
     current: Screen,
     onItemClick: (Screen) -> Unit,
     content: @Composable () -> Unit
@@ -43,7 +43,7 @@ fun HomeScreen(
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
-                val photoUrl = user?.photoUrl
+                val photoUrl = user.photoUrl
                 PiggyTopBar(
                     topBarController = topBar,
                     navigationIcon = if (!photoUrl.isNullOrBlank()) {

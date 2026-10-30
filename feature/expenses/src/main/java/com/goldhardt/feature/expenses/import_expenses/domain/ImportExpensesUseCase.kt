@@ -4,6 +4,7 @@ import com.goldhardt.core.auth.session.UserSession
 import com.goldhardt.core.domain.model.ExpenseFormData
 import com.goldhardt.core.domain.repository.ExpenseRepository
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Use case for batch importing expenses with progress tracking.
@@ -58,8 +59,10 @@ class ImportExpensesUseCase @Inject constructor(
                     failures = failures
                 )
             }
-        } catch (e: Exception) {
-            ImportResult.Error(e.message ?: "Batch import failed")
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            ImportResult.Error("Couldn't import expenses. Please try again.")
         }
     }
 }

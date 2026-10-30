@@ -13,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.InputStream
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,8 +40,10 @@ class ImportViewModel @Inject constructor(
             try {
                 val categories = getUserCategoriesUseCase()
                 _uiState.update { it.copy(categories = categories) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(error = "Failed to load categories: ${e.message}") }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                _uiState.update { it.copy(error = "Couldn't load categories. Please try again.") }
             }
         }
     }
@@ -54,8 +57,10 @@ class ImportViewModel @Inject constructor(
                     openStream()?.use { inputStream ->
                         csvParser.parse(inputStream)
                     } ?: CsvParseResult.Error("Failed to open CSV file")
-                } catch (e: Exception) {
-                    CsvParseResult.Error("Failed to open CSV file: ${e.message}")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    CsvParseResult.Error("Couldn't read the selected file. Please try again.")
                 }
             }
 
@@ -123,12 +128,18 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isImporting = true, importProgress = 0) }
 
-            val result = importExpensesUseCase(
-                expenses = _uiState.value.expenses,
-                onProgress = { current, total ->
-                    _uiState.update { it.copy(importProgress = (current * 100) / total) }
-                }
-            )
+            val result = try {
+                importExpensesUseCase(
+                    expenses = _uiState.value.expenses,
+                    onProgress = { current, total ->
+                        _uiState.update { it.copy(importProgress = (current * 100) / total) }
+                    }
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                ImportResult.Error("Couldn't import expenses. Please try again.")
+            }
 
             when (result) {
                 is ImportResult.Success -> {
