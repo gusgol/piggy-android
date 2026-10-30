@@ -6,6 +6,7 @@ import com.goldhardt.core.auth.session.UserSession
 import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.core.domain.model.ExpenseFormData
 import com.goldhardt.core.domain.model.ExpenseUpdate
+import com.goldhardt.core.domain.model.ExpenseWithCategory
 import com.goldhardt.core.domain.repository.ExpenseRepository
 import java.time.Instant
 import java.time.YearMonth
@@ -74,10 +75,10 @@ class ImportExpensesUseCaseTest {
     private class FakeExpenseRepository : ExpenseRepository {
         val batchAdded = mutableListOf<ExpenseFormData>()
 
-        override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<Expense>> =
+        override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<ExpenseWithCategory>> =
             flowOf(emptyList())
 
-        override suspend fun getExpenses(userId: String, month: YearMonth, categoryId: String?): List<Expense> =
+        override suspend fun getExpenses(userId: String, month: YearMonth, categoryId: String?): List<ExpenseWithCategory> =
             emptyList()
 
         override suspend fun addExpense(userId: String, form: ExpenseFormData): Expense =

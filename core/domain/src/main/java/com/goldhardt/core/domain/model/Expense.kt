@@ -14,10 +14,12 @@ data class Expense(
     val isFixed: Boolean,
     val createdAt: Instant,
     val userId: String,
-    // Optional denormalized category fields for easier display
-    val categoryName: String? = null,
-    val categoryIcon: String? = null,
-    val categoryColor: String? = null,
+)
+
+/** Expense read result with its current category metadata. */
+data class ExpenseWithCategory(
+    val expense: Expense,
+    val category: Category?,
 )
 
 /** Shape for creating a new expense. */
@@ -36,5 +38,4 @@ data class ExpenseUpdate(
     val date: Instant? = null,
     val categoryId: String? = null,
     val isFixed: Boolean? = null,
-    val categoryName: String? = null, // allow updating denormalized field when category changes
 )

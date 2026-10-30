@@ -1,7 +1,7 @@
 package com.goldhardt.feature.expenses.domain
 
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseWithCategory
 import com.goldhardt.core.domain.repository.ExpenseRepository
 import java.time.YearMonth
 import javax.inject.Inject
@@ -18,7 +18,7 @@ class ObserveMonthExpensesUseCase @Inject constructor(
     operator fun invoke(
         month: YearMonth,
         categoryId: String? = null,
-    ): Flow<List<Expense>> {
+    ): Flow<List<ExpenseWithCategory>> {
         return userSession.authState.flatMapLatest { user ->
             val uid = user?.id
             if (uid == null) {

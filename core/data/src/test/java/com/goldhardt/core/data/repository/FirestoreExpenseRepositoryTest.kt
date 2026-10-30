@@ -51,9 +51,9 @@ class FirestoreExpenseRepositoryTest {
         val enriched = repository.observeExpenses("u1", YearMonth.of(2025, 10)).first()
 
         assertEquals(1, enriched.size)
-        assertEquals("Groceries", enriched[0].categoryName)
-        assertEquals("🛒", enriched[0].categoryIcon)
-        assertEquals("#CAFFBF", enriched[0].categoryColor)
+        assertEquals("Groceries", enriched[0].category?.name)
+        assertEquals("🛒", enriched[0].category?.icon)
+        assertEquals("#CAFFBF", enriched[0].category?.color)
     }
 
     private class FakeExpenseRemoteDataSource(private val items: List<Expense>) : ExpenseRemoteDataSource {
