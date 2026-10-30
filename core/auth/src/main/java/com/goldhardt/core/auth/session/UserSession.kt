@@ -16,6 +16,12 @@ class UserSession @Inject constructor(
     private val authRepository: AuthRepository
 ) {
     /**
+     * Returns the current user or null if not authenticated.
+     */
+    val currentUserOrNull: User?
+        get() = authRepository.currentUser
+
+    /**
      * Returns the current user or throws if not authenticated.
      * Use this in repositories for operations that require an authenticated user.
      */

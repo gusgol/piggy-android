@@ -1,45 +1,31 @@
 package com.goldhardt.feature.trends.domain
 
-import com.goldhardt.core.auth.repository.AuthRepository
+import com.goldhardt.core.auth.session.UserSession
 import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.repository.CategoryRepository
 import com.goldhardt.core.data.repository.ExpenseRepository
+import java.time.YearMonth
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import java.time.ZoneId
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ObserveMonthlyTrendsUseCase @Inject constructor(
     private val expenseRepository: ExpenseRepository,
-    private val categoryRepository: CategoryRepository,
-    private val authRepository: AuthRepository,
+    private val userSession: UserSession,
 ) {
     private val dateFormatter = DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()).withZone(ZoneId.systemDefault())
 
     operator fun invoke(month: YearMonth): Flow<TrendsData> {
-        return authRepository.authState().flatMapLatest { user ->
+        return userSession.authState.flatMapLatest { user ->
             val uid = user?.id ?: return@flatMapLatest flowOf(TrendsData.empty(month))
-            val expensesFlow = expenseRepository.observeExpenses(uid, month, null)
-            val categoriesFlow = categoryRepository.observeCategories(uid)
-            expensesFlow.combine(categoriesFlow) { expenses, categories ->
-                val catMap = categories.associateBy { it.id }
-                // decorate expenses with latest category fields if missing
-                val enriched = expenses.map { e ->
-                    val c = catMap[e.categoryId]
-                    e.copy(
-                        categoryName = c?.name ?: e.categoryName,
-                        categoryIcon = c?.icon ?: e.categoryIcon,
-                        categoryColor = c?.color ?: e.categoryColor,
-                    )
-                }
-                buildTrends(month, enriched)
+            expenseRepository.observeExpenses(uid, month, null).map { expenses ->
+                buildTrends(month, expenses)
             }
         }
     }

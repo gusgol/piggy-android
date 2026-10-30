@@ -44,7 +44,6 @@ dependencies {
     implementation(projects.core.designsystem)
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
 
     // UI + Compose
     implementation(libs.androidx.activity.compose)

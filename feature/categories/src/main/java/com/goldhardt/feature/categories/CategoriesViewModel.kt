@@ -10,10 +10,11 @@ import com.goldhardt.feature.categories.domain.UpdateCategoryUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class UiState(
@@ -24,36 +25,35 @@ data class UiState(
 
 @HiltViewModel
 class CategoriesViewModel @Inject constructor(
-    private val observeUserCategories: ObserveUserCategoriesUseCase,
+    observeUserCategories: ObserveUserCategoriesUseCase,
     private val updateCategoryUseCase: UpdateCategoryUseCase,
     private val addCategoryUseCase: AddCategoryUseCase,
     private val deleteCategoryUseCase: DeleteCategoryUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(UiState())
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    private val mutationError = MutableStateFlow<String?>(null)
 
-    init {
-        observeCategories()
-    }
-
-    private fun observeCategories() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            observeUserCategories()
-                .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.message) } }
-                .collect { categories ->
-                    _uiState.update { it.copy(isLoading = false, categories = categories, error = null) }
-                }
-        }
-    }
+    val uiState: StateFlow<UiState> =
+        observeUserCategories()
+            .combine(mutationError) { categories, error ->
+                UiState(isLoading = false, categories = categories, error = error)
+            }
+            .catch { e ->
+                emit(UiState(isLoading = false, error = e.message))
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = UiState(isLoading = true)
+            )
 
     fun updateCategory(category: Category) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 updateCategoryUseCase(category)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                mutationError.value = e.message
             }
         }
     }
@@ -61,9 +61,10 @@ class CategoriesViewModel @Inject constructor(
     fun addCategory(name: String, icon: String, color: String) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 addCategoryUseCase(name, icon, color)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                mutationError.value = e.message
             }
         }
     }
@@ -71,9 +72,10 @@ class CategoriesViewModel @Inject constructor(
     fun deleteCategory(categoryId: String) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 deleteCategoryUseCase(categoryId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message) }
+                mutationError.value = e.message
             }
         }
     }

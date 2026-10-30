@@ -44,7 +44,6 @@ dependencies {
     implementation(projects.core.designsystem)
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
 
     // UI + Compose
     implementation(libs.androidx.activity.compose)
@@ -67,6 +66,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

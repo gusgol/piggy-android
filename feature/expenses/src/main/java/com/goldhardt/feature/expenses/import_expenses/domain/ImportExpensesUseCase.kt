@@ -1,6 +1,6 @@
 package com.goldhardt.feature.expenses.import_expenses.domain
 
-import com.goldhardt.core.auth.repository.AuthRepository
+import com.goldhardt.core.auth.session.UserSession
 import com.goldhardt.core.data.model.ExpenseFormData
 import com.goldhardt.core.data.repository.ExpenseRepository
 import javax.inject.Inject
@@ -9,14 +9,14 @@ import javax.inject.Inject
  * Use case for batch importing expenses with progress tracking.
  */
 class ImportExpensesUseCase @Inject constructor(
-    private val authRepository: AuthRepository,
+    private val userSession: UserSession,
     private val expenseRepository: ExpenseRepository,
 ) {
     suspend operator fun invoke(
         expenses: List<ImportedExpense>,
         onProgress: (current: Int, total: Int) -> Unit = { _, _ -> }
     ): ImportResult {
-        val user = authRepository.currentUser
+        val user = userSession.currentUserOrNull
             ?: return ImportResult.Error("User must be signed in")
 
         val validForms = mutableListOf<ExpenseFormData>()
