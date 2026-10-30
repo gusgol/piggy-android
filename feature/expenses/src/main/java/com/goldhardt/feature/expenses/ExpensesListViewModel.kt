@@ -6,6 +6,7 @@ import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.core.domain.model.ExpenseFormData
 import com.goldhardt.core.domain.model.ExpenseUpdate
+import com.goldhardt.core.domain.model.ExpenseWithCategory
 import com.goldhardt.feature.expenses.domain.ObserveMonthExpensesUseCase
 import com.goldhardt.feature.expenses.domain.AddExpenseUseCase
 import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
@@ -28,7 +29,7 @@ import java.time.YearMonth
 
 data class UiState(
     val month: YearMonth = YearMonth.now(),
-    val expenses: List<Expense> = emptyList(),
+    val expenses: List<ExpenseWithCategory> = emptyList(),
     val total: Double = 0.0,
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -123,14 +124,14 @@ class ExpensesListViewModel @Inject constructor(
 
     private fun createUiState(
         month: YearMonth,
-        expenses: List<Expense> = emptyList(),
+        expenses: List<ExpenseWithCategory> = emptyList(),
         isLoading: Boolean = false,
         error: String? = null,
     ): UiState {
         return UiState(
             month = month,
             expenses = expenses,
-            total = expenses.sumOf { it.amount },
+            total = expenses.sumOf { it.expense.amount },
             isLoading = isLoading,
             error = error,
         )

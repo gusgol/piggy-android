@@ -53,6 +53,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseWithCategory
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard
@@ -176,7 +177,7 @@ internal fun ExpensesListScreenContent(
                 items = state.expenses,
                 onClick = { exp ->
                     onRefreshCategories()
-                    editingExpense = exp
+                    editingExpense = exp.expense
                 }
             )
         }
@@ -224,8 +225,8 @@ internal fun ExpensesListScreenContent(
 @Composable
 private fun ExpensesList(
     total: Double,
-    items: List<Expense>,
-    onClick: (Expense) -> Unit,
+    items: List<ExpenseWithCategory>,
+    onClick: (ExpenseWithCategory) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -235,14 +236,16 @@ private fun ExpensesList(
         item {
             TotalAmountCard(total = total)
         }
-        items(items, key = { it.id }) { expense ->
+        items(items, key = { it.expense.id }) { expense ->
             ExpenseItem(expense, onClick = { onClick(expense) })
         }
     }
 }
 
 @Composable
-private fun ExpenseItem(expense: Expense, onClick: () -> Unit = {}) {
+private fun ExpenseItem(expenseWithCategory: ExpenseWithCategory, onClick: () -> Unit = {}) {
+    val expense = expenseWithCategory.expense
+    val category = expenseWithCategory.category
     val currency = NumberFormat.getCurrencyInstance()
     val dateLabel = try {
         DateTimeFormatter.ofPattern("MMM d")
@@ -268,9 +271,9 @@ private fun ExpenseItem(expense: Expense, onClick: () -> Unit = {}) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CategoryAvatar(
-                name = expense.categoryName,
-                colorHex = expense.categoryColor,
-                iconEmoji = expense.categoryIcon
+                name = category?.name,
+                colorHex = category?.color,
+                iconEmoji = category?.icon
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(
@@ -291,7 +294,7 @@ private fun ExpenseItem(expense: Expense, onClick: () -> Unit = {}) {
                     overflow = TextOverflow.Ellipsis
                 )
                 Row {
-                    expense.categoryName?.let {
+                    category?.name?.let {
                         Pill(text = it)
                     }
                     Spacer(modifier = Modifier.width(4.dp))
@@ -344,70 +347,70 @@ private fun CategoryAvatar(name: String?, colorHex: String?, iconEmoji: String?)
 
 
 private val previewExpenses = listOf(
-    Expense(
-        id = "1",
-        name = "Apartment Rent",
-        amount = 1450.0,
-        date = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant(),
-        categoryId = "housing",
-        isFixed = true,
-        createdAt = Instant.EPOCH,
-        userId = "user1",
-        categoryName = "Housing",
-        categoryIcon = "🏠",
-        categoryColor = "#FFADAD"
+    ExpenseWithCategory(
+        expense = Expense(
+            id = "1",
+            name = "Apartment Rent",
+            amount = 1450.0,
+            date = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            categoryId = "housing",
+            isFixed = true,
+            createdAt = Instant.EPOCH,
+            userId = "user1",
+        ),
+        category = Category("housing", "Housing", Instant.EPOCH, "user1", "🏠", "#FFADAD"),
     ),
-    Expense(
-        id = "2",
-        name = "Whole Foods Market",
-        amount = 184.50,
-        date = LocalDate.of(2026, 10, 12).atStartOfDay(ZoneId.systemDefault()).toInstant(),
-        categoryId = "groceries",
-        isFixed = false,
-        createdAt = Instant.EPOCH,
-        userId = "user1",
-        categoryName = "Groceries",
-        categoryIcon = "🛒",
-        categoryColor = "#CAFFBF"
+    ExpenseWithCategory(
+        expense = Expense(
+            id = "2",
+            name = "Whole Foods Market",
+            amount = 184.50,
+            date = LocalDate.of(2026, 10, 12).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            categoryId = "groceries",
+            isFixed = false,
+            createdAt = Instant.EPOCH,
+            userId = "user1",
+        ),
+        category = Category("groceries", "Groceries", Instant.EPOCH, "user1", "🛒", "#CAFFBF"),
     ),
-    Expense(
-        id = "3",
-        name = "Dinner with Friends",
-        amount = 68.0,
-        date = LocalDate.of(2026, 10, 15).atStartOfDay(ZoneId.systemDefault()).toInstant(),
-        categoryId = "food",
-        isFixed = false,
-        createdAt = Instant.EPOCH,
-        userId = "user1",
-        categoryName = "Dining Out",
-        categoryIcon = "🍔",
-        categoryColor = "#FFD6A5"
+    ExpenseWithCategory(
+        expense = Expense(
+            id = "3",
+            name = "Dinner with Friends",
+            amount = 68.0,
+            date = LocalDate.of(2026, 10, 15).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            categoryId = "food",
+            isFixed = false,
+            createdAt = Instant.EPOCH,
+            userId = "user1",
+        ),
+        category = Category("food", "Dining Out", Instant.EPOCH, "user1", "🍔", "#FFD6A5"),
     ),
-    Expense(
-        id = "4",
-        name = "City Metro Pass",
-        amount = 45.0,
-        date = LocalDate.of(2026, 10, 18).atStartOfDay(ZoneId.systemDefault()).toInstant(),
-        categoryId = "transport",
-        isFixed = true,
-        createdAt = Instant.EPOCH,
-        userId = "user1",
-        categoryName = "Transport",
-        categoryIcon = "🚗",
-        categoryColor = "#A0C4FF"
+    ExpenseWithCategory(
+        expense = Expense(
+            id = "4",
+            name = "City Metro Pass",
+            amount = 45.0,
+            date = LocalDate.of(2026, 10, 18).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            categoryId = "transport",
+            isFixed = true,
+            createdAt = Instant.EPOCH,
+            userId = "user1",
+        ),
+        category = Category("transport", "Transport", Instant.EPOCH, "user1", "🚗", "#A0C4FF"),
     ),
-    Expense(
-        id = "5",
-        name = "Specialty Coffee Beans",
-        amount = 24.90,
-        date = LocalDate.of(2026, 10, 22).atStartOfDay(ZoneId.systemDefault()).toInstant(),
-        categoryId = "coffee",
-        isFixed = false,
-        createdAt = Instant.EPOCH,
-        userId = "user1",
-        categoryName = "Coffee",
-        categoryIcon = "☕️",
-        categoryColor = "#BDB2FF"
+    ExpenseWithCategory(
+        expense = Expense(
+            id = "5",
+            name = "Specialty Coffee Beans",
+            amount = 24.90,
+            date = LocalDate.of(2026, 10, 22).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            categoryId = "coffee",
+            isFixed = false,
+            createdAt = Instant.EPOCH,
+            userId = "user1",
+        ),
+        category = Category("coffee", "Coffee", Instant.EPOCH, "user1", "☕️", "#BDB2FF"),
     )
 )
 
@@ -420,7 +423,7 @@ private fun ExpensesListScreenPreview() {
                 state = UiState(
                     month = YearMonth.of(2026, 10),
                     expenses = previewExpenses,
-                    total = previewExpenses.sumOf { it.amount },
+                    total = previewExpenses.sumOf { it.expense.amount },
                     isLoading = false
                 )
             )
@@ -441,7 +444,7 @@ private fun ExpensesListScreenDarkPreview() {
                 state = UiState(
                     month = YearMonth.of(2026, 10),
                     expenses = previewExpenses,
-                    total = previewExpenses.sumOf { it.amount },
+                    total = previewExpenses.sumOf { it.expense.amount },
                     isLoading = false
                 )
             )
@@ -473,14 +476,16 @@ private fun ExpenseItemPreview() {
     PiggyTheme {
         Surface {
             Column(Modifier.padding(16.dp)) {
-                ExpenseItem(expense = expense)
+                ExpenseItem(expenseWithCategory = expense)
                 Spacer(Modifier.height(16.dp))
-                ExpenseItem(expense = expense.copy(isFixed = true, categoryName = null))
+                ExpenseItem(expenseWithCategory = expense.copy(expense = expense.expense.copy(isFixed = true)))
                 Spacer(Modifier.height(16.dp))
                 ExpenseItem(
-                    expense = expense.copy(
-                        name = "Very very very long name for an expense that should be truncated",
-                        isFixed = true
+                    expenseWithCategory = expense.copy(
+                        expense = expense.expense.copy(
+                            name = "Very very very long name for an expense that should be truncated",
+                            isFixed = true
+                        )
                     )
                 )
             }

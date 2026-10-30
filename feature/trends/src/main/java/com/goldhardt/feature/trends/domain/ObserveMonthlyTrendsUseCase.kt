@@ -1,7 +1,7 @@
 package com.goldhardt.feature.trends.domain
 
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseWithCategory
 import com.goldhardt.core.domain.repository.ExpenseRepository
 import java.time.YearMonth
 import java.time.ZoneId
@@ -30,20 +30,20 @@ class ObserveMonthlyTrendsUseCase @Inject constructor(
         }
     }
 
-    private fun buildTrends(month: YearMonth, expenses: List<Expense>): TrendsData {
+    private fun buildTrends(month: YearMonth, expenses: List<ExpenseWithCategory>): TrendsData {
         if (expenses.isEmpty()) return TrendsData(total = 0.0, slices = emptyList(), categories = emptyList(), dayStacks = emptyList())
 
-        val groups = expenses.groupBy { it.categoryId }
+        val groups = expenses.groupBy { it.expense.categoryId }
         val categories = groups.map { (categoryId, items) ->
-            val name = items.firstNotNullOfOrNull { it.categoryName } ?: "Other"
-            val icon = items.firstNotNullOfOrNull { it.categoryIcon } ?: "🏷️"
-            val color = items.firstNotNullOfOrNull { it.categoryColor }
-            val total = items.sumOf { it.amount }
-            val uiItems = items.sortedByDescending { it.date }.map {
+            val name = items.firstNotNullOfOrNull { it.category?.name } ?: "Other"
+            val icon = items.firstNotNullOfOrNull { it.category?.icon } ?: "🏷️"
+            val color = items.firstNotNullOfOrNull { it.category?.color }
+            val total = items.sumOf { it.expense.amount }
+            val uiItems = items.sortedByDescending { it.expense.date }.map { item ->
                 CategoryExpenseItem(
-                    name = it.name,
-                    amount = it.amount,
-                    dateLabel = try { dateFormatter.format(it.date) } catch (_: Throwable) { "" }
+                    name = item.expense.name,
+                    amount = item.expense.amount,
+                    dateLabel = try { dateFormatter.format(item.expense.date) } catch (_: Throwable) { "" }
                 )
             }
             CategoryAggregate(
@@ -61,16 +61,16 @@ class ObserveMonthlyTrendsUseCase @Inject constructor(
 
         // Build day-level stacks across the entire selected month
         val daysInMonth = month.lengthOfMonth()
-        val byDay: Map<Int, List<Expense>> = expenses.groupBy { exp ->
-            try { exp.date.atZone(ZoneId.systemDefault()).dayOfMonth } catch (_: Throwable) { 1 }
+        val byDay: Map<Int, List<ExpenseWithCategory>> = expenses.groupBy { item ->
+            try { item.expense.date.atZone(ZoneId.systemDefault()).dayOfMonth } catch (_: Throwable) { 1 }
         }
         val dayStacks = (1..daysInMonth).map { day ->
             val items = byDay[day].orEmpty()
             val pieces = items
-                .groupBy { it.categoryId }
+                .groupBy { it.expense.categoryId }
                 .map { (categoryId, list) ->
-                    val amount = list.sumOf { it.amount }
-                    val colorHex = list.firstNotNullOfOrNull { it.categoryColor }
+                    val amount = list.sumOf { it.expense.amount }
+                    val colorHex = list.firstNotNullOfOrNull { it.category?.color }
                     DayPiece(categoryId = categoryId, amount = amount, colorHex = colorHex)
                 }
                 .sortedByDescending { it.amount }
