@@ -4,8 +4,8 @@ import com.goldhardt.core.data.datasource.CategoryRemoteDataSource
 import com.goldhardt.core.data.datasource.FirestoreCategoryRemoteDataSource
 import com.goldhardt.core.data.datasource.ExpenseRemoteDataSource
 import com.goldhardt.core.data.datasource.FirestoreExpenseRemoteDataSource
-import com.goldhardt.core.data.repository.CategoryRepository
-import com.goldhardt.core.data.repository.ExpenseRepository
+import com.goldhardt.core.domain.repository.CategoryRepository
+import com.goldhardt.core.domain.repository.ExpenseRepository
 import com.goldhardt.core.data.repository.FirestoreCategoryRepository
 import com.goldhardt.core.data.repository.FirestoreExpenseRepository
 import com.google.firebase.firestore.FirebaseFirestore

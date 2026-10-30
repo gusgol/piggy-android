@@ -1,8 +1,8 @@
 package com.goldhardt.core.data.datasource
 
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.model.ExpenseUpdate
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.model.ExpenseUpdate
 import java.time.Instant
 import kotlinx.coroutines.flow.Flow
 

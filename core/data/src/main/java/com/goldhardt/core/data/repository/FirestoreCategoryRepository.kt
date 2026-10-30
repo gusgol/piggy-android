@@ -1,7 +1,8 @@
 package com.goldhardt.core.data.repository
 
 import com.goldhardt.core.data.datasource.CategoryRemoteDataSource
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
+import com.goldhardt.core.domain.repository.CategoryRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton

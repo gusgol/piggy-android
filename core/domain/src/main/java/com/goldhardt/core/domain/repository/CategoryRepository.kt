@@ -1,6 +1,6 @@
-package com.goldhardt.core.data.repository
+package com.goldhardt.core.domain.repository
 
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import kotlinx.coroutines.flow.Flow
 
 interface CategoryRepository {

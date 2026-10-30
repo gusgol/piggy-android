@@ -1,6 +1,6 @@
 package com.goldhardt.core.data.datasource
 
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import com.goldhardt.core.data.model.CategoryDocument
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore

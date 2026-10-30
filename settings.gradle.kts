@@ -23,6 +23,7 @@ rootProject.name = "Piggy"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 include(":core:designsystem")
+include(":core:domain")
 include(":feature:auth")
 include(":feature:expenses")
 include(":feature:categories")

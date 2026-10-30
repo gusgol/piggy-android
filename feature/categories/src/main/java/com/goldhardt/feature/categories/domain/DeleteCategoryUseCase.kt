@@ -1,6 +1,6 @@
 package com.goldhardt.feature.categories.domain
 
-import com.goldhardt.core.data.repository.CategoryRepository
+import com.goldhardt.core.domain.repository.CategoryRepository
 import javax.inject.Inject
 
 class DeleteCategoryUseCase @Inject constructor(

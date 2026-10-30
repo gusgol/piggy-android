@@ -2,10 +2,10 @@ package com.goldhardt.core.data.repository
 
 import com.goldhardt.core.data.datasource.CategoryRemoteDataSource
 import com.goldhardt.core.data.datasource.ExpenseRemoteDataSource
-import com.goldhardt.core.data.model.Category
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.model.ExpenseUpdate
+import com.goldhardt.core.domain.model.Category
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.model.ExpenseUpdate
 import java.time.Instant
 import java.time.YearMonth
 import kotlinx.coroutines.flow.Flow

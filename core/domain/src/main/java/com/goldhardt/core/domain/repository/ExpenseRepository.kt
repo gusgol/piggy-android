@@ -1,8 +1,8 @@
-package com.goldhardt.core.data.repository
+package com.goldhardt.core.domain.repository
 
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.model.ExpenseUpdate
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.model.ExpenseUpdate
 import kotlinx.coroutines.flow.Flow
 import java.time.YearMonth
 

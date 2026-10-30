@@ -1,7 +1,5 @@
-package com.goldhardt.core.data.model
+package com.goldhardt.core.domain.model
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.PropertyName
 import java.time.Instant
 
 /**
@@ -20,20 +18,6 @@ data class Expense(
     val categoryName: String? = null,
     val categoryIcon: String? = null,
     val categoryColor: String? = null,
-)
-
-/**
- * Firestore document shape for Expense used with toObject/set operations.
- * The id is taken from the Firestore document id and is not included in the document body.
- */
-internal data class ExpenseDocument(
-    val name: String? = null,
-    val amount: Double? = null,
-    val date: Timestamp? = null,
-    val categoryId: String? = null,
-    @get:PropertyName("isFixed") val isFixed: Boolean? = null,
-    val createdAt: Timestamp? = null,
-    val userId: String? = null,
 )
 
 /** Shape for creating a new expense. */

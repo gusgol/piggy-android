@@ -42,7 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import com.goldhardt.feature.expenses.R
 import java.text.NumberFormat
 import java.time.Instant
