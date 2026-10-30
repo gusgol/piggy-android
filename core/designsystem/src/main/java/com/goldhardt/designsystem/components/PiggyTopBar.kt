@@ -58,7 +58,7 @@ fun ConfigureTopBar(
 }
 
 val LocalTopBarController = staticCompositionLocalOf<TopBarController> {
-    error("LocalTopBarController not provided")
+    TopBarController()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

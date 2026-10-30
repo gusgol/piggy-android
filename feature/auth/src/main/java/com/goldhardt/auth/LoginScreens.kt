@@ -67,7 +67,7 @@ fun LoginScreen(
 }
 
 @Composable
-private fun LoginScreenContent(
+internal fun LoginScreenContent(
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     error: String? = null,
@@ -193,18 +193,32 @@ private fun LoginScreenContent(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Login - Light", showBackground = true)
 @Composable
 fun LoginScreenPreview() {
     PiggyTheme {
-        LoginScreen()
+        LoginScreenContent()
     }
 }
 
-@Preview(showBackground = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Preview(
+    name = "Login - Dark",
+    showBackground = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 fun LoginScreenDarkPreview() {
+    PiggyTheme(darkTheme = true) {
+        LoginScreenContent()
+    }
+}
+
+@Preview(name = "Login - Error State", showBackground = true)
+@Composable
+fun LoginScreenErrorPreview() {
     PiggyTheme {
-        LoginScreen()
+        LoginScreenContent(
+            error = "Sign-in was cancelled or failed. Please try again."
+        )
     }
 }

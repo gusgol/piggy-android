@@ -42,6 +42,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import android.content.res.Configuration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard
+import com.goldhardt.designsystem.theme.PiggyTheme
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -60,6 +62,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.format.TextStyle
 
 @Composable
@@ -73,6 +76,19 @@ fun TrendsScreen(
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    TrendsScreenContent(
+        state = state,
+        modifier = modifier,
+        onMonthChange = { viewModel.setMonth(it) }
+    )
+}
+
+@Composable
+internal fun TrendsScreenContent(
+    state: TrendsUiState,
+    modifier: Modifier = Modifier,
+    onMonthChange: (YearMonth) -> Unit = {}
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -80,7 +96,7 @@ fun TrendsScreen(
     ) {
         MonthSelector(
             month = state.month,
-            onMonthChange = { viewModel.setMonth(it) },
+            onMonthChange = onMonthChange,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -470,28 +486,113 @@ private fun DayBar(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun CategoryGroupRowPreview() {
-    val data = CategoryGroupUi(
-        id = "1",
-        name = "Groceries",
-        icon = "🛒",
-        colorHex = "#FF0000",
-        total = 123.45,
-        count = 3,
-        items = listOf(
-            CategoryExpenseItemUi(
-                name = "Aldi",
-                amount = 50.0,
-                dateLabel = "01/01"
-            ),
-            CategoryExpenseItemUi(
-                name = "Lidl",
-                amount = 40.0,
-                dateLabel = "02/01"
+private val previewTrendsState = TrendsUiState(
+    month = YearMonth.of(2026, 10),
+    isLoading = false,
+    total = 2145.90,
+    slices = listOf(
+        CategorySliceUi(categoryId = "housing", categoryName = "Housing", colorHex = "#FFADAD", amount = 1450.0),
+        CategorySliceUi(categoryId = "groceries", categoryName = "Groceries", colorHex = "#CAFFBF", amount = 385.50),
+        CategorySliceUi(categoryId = "dining", categoryName = "Dining Out", colorHex = "#FFD6A5", amount = 198.40),
+        CategorySliceUi(categoryId = "transport", categoryName = "Transport", colorHex = "#A0C4FF", amount = 112.00),
+    ),
+    categories = listOf(
+        CategoryGroupUi(
+            id = "housing",
+            name = "Housing",
+            icon = "🏠",
+            colorHex = "#FFADAD",
+            total = 1450.0,
+            count = 1,
+            items = listOf(
+                CategoryExpenseItemUi(name = "Apartment Rent", amount = 1450.0, dateLabel = "Oct 1")
+            )
+        ),
+        CategoryGroupUi(
+            id = "groceries",
+            name = "Groceries",
+            icon = "🛒",
+            colorHex = "#CAFFBF",
+            total = 385.50,
+            count = 3,
+            items = listOf(
+                CategoryExpenseItemUi(name = "Whole Foods", amount = 184.50, dateLabel = "Oct 5"),
+                CategoryExpenseItemUi(name = "Trader Joe's", amount = 115.00, dateLabel = "Oct 12"),
+                CategoryExpenseItemUi(name = "Farmers Market", amount = 86.00, dateLabel = "Oct 19")
+            )
+        ),
+        CategoryGroupUi(
+            id = "dining",
+            name = "Dining Out",
+            icon = "🍔",
+            colorHex = "#FFD6A5",
+            total = 198.40,
+            count = 4,
+            items = listOf(
+                CategoryExpenseItemUi(name = "Sushi Night", amount = 84.00, dateLabel = "Oct 8"),
+                CategoryExpenseItemUi(name = "Brunch Cafe", amount = 52.40, dateLabel = "Oct 14"),
+                CategoryExpenseItemUi(name = "Pizza Place", amount = 62.00, dateLabel = "Oct 21")
+            )
+        ),
+        CategoryGroupUi(
+            id = "transport",
+            name = "Transport",
+            icon = "🚗",
+            colorHex = "#A0C4FF",
+            total = 112.00,
+            count = 2,
+            items = listOf(
+                CategoryExpenseItemUi(name = "City Metro Pass", amount = 45.00, dateLabel = "Oct 2"),
+                CategoryExpenseItemUi(name = "Airport Ride", amount = 67.00, dateLabel = "Oct 17")
             )
         )
-    )
-    CategoryGroupRow(data = data)
+    ),
+    dayStacks = (1..14).map { day ->
+        val pieces = when (day) {
+            1 -> listOf(DayPieceUi("housing", 450.0, "#FFADAD"))
+            2 -> listOf(DayPieceUi("transport", 45.0, "#A0C4FF"))
+            5 -> listOf(DayPieceUi("groceries", 184.50, "#CAFFBF"))
+            8 -> listOf(DayPieceUi("dining", 84.0, "#FFD6A5"), DayPieceUi("transport", 24.0, "#A0C4FF"))
+            10 -> listOf(DayPieceUi("dining", 42.0, "#FFD6A5"))
+            12 -> listOf(DayPieceUi("groceries", 115.0, "#CAFFBF"), DayPieceUi("dining", 38.0, "#FFD6A5"))
+            14 -> listOf(DayPieceUi("dining", 52.40, "#FFD6A5"))
+            else -> emptyList()
+        }
+        DayStackUi(day = day, pieces = pieces)
+    }
+)
+
+@Preview(name = "Trends Screen - Light", showBackground = true, heightDp = 900)
+@Composable
+private fun TrendsScreenPreview() {
+    PiggyTheme {
+        Surface {
+            TrendsScreenContent(state = previewTrendsState)
+        }
+    }
+}
+
+@Preview(
+    name = "Trends Screen - Dark",
+    showBackground = true,
+    heightDp = 900,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun TrendsScreenDarkPreview() {
+    PiggyTheme(darkTheme = true) {
+        Surface {
+            TrendsScreenContent(state = previewTrendsState)
+        }
+    }
+}
+
+@Preview(name = "Category Group Row", showBackground = true)
+@Composable
+private fun CategoryGroupRowPreview() {
+    PiggyTheme {
+        Surface(Modifier.padding(16.dp)) {
+            CategoryGroupRow(data = previewTrendsState.categories[1])
+        }
+    }
 }

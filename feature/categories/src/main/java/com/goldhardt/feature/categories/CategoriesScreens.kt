@@ -35,6 +35,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import android.content.res.Configuration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,14 +44,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.data.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
+import com.goldhardt.designsystem.theme.PiggyTheme
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,16 +63,12 @@ fun CategoriesScreen(
     viewModel: CategoriesViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-
-    // Add Category state (moved up to be available in ConfigureTopBar actions)
     val isAddingCategory = remember { mutableStateOf(false) }
-    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ConfigureTopBar (
+    ConfigureTopBar(
         title = context.getString(R.string.title_categories),
         actions = {
             IconButton(onClick = {
-                // Open Add Category sheet
                 isAddingCategory.value = true
             }) {
                 Icon(imageVector = Icons.Outlined.Add, contentDescription = stringResource(R.string.action_add_category))
@@ -78,6 +78,36 @@ fun CategoriesScreen(
 
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
+    CategoriesScreenContent(
+        state = state,
+        modifier = modifier,
+        isAddingCategory = isAddingCategory.value,
+        onDismissAddCategory = { isAddingCategory.value = false },
+        onAddCategory = { name, icon, color ->
+            viewModel.addCategory(name.trim(), icon, color)
+            isAddingCategory.value = false
+        },
+        onUpdateCategory = { category ->
+            viewModel.updateCategory(category)
+        },
+        onDeleteCategory = { categoryId ->
+            viewModel.deleteCategory(categoryId)
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun CategoriesScreenContent(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    isAddingCategory: Boolean = false,
+    onDismissAddCategory: () -> Unit = {},
+    onAddCategory: (name: String, icon: String, color: String) -> Unit = { _, _, _ -> },
+    onUpdateCategory: (Category) -> Unit = {},
+    onDeleteCategory: (String) -> Unit = {},
+) {
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var editingCategory by remember { mutableStateOf<Category?>(null) }
     val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -102,7 +132,7 @@ fun CategoriesScreen(
                     items(state.categories, key = { it.id }) { category ->
                         CategoryCard(
                             category = category,
-                            modifier = Modifier.clickable { editingCategory = category }
+                            onClick = { editingCategory = category }
                         )
                     }
                 }
@@ -120,18 +150,18 @@ fun CategoriesScreen(
                 showDelete = true,
                 onDismiss = { editingCategory = null },
                 onSave = { name, icon, color ->
-                    viewModel.updateCategory(current.copy(name = name.trim(), icon = icon, color = color))
+                    onUpdateCategory(current.copy(name = name.trim(), icon = icon, color = color))
                     editingCategory = null
                 },
                 onDelete = {
-                    viewModel.deleteCategory(current.id)
+                    onDeleteCategory(current.id)
                     editingCategory = null
                 }
             )
         }
 
         // Add bottom sheet
-        if (isAddingCategory.value) {
+        if (isAddingCategory) {
             CategoryEditorBottomSheet(
                 title = "Add Category",
                 sheetState = addSheetState,
@@ -139,19 +169,21 @@ fun CategoriesScreen(
                 initialIcon = ICONS.firstOrNull() ?: "🏷️",
                 initialColor = COLORS.firstOrNull() ?: "#FFADAD",
                 showDelete = false,
-                onDismiss = { isAddingCategory.value = false },
-                onSave = { name, icon, color ->
-                    viewModel.addCategory(name.trim(), icon, color)
-                    isAddingCategory.value = false
-                }
+                onDismiss = onDismissAddCategory,
+                onSave = onAddCategory
             )
         }
     }
 }
 
 @Composable
-private fun CategoryCard(category: Category, modifier: Modifier = Modifier) {
+private fun CategoryCard(
+    category: Category,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {}
+) {
     ElevatedCard(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.outlinedCardColors(
@@ -349,3 +381,57 @@ private val COLORS = listOf(
     "#FF9AA2", "#FFB7B2", "#FFDAC1", "#E2F0CB", "#B5EAD7", "#C7CEEA", "#F3E4EA", "#F4C2C2",
     "#FFD1DC", "#FFABAB", "#FFC3A0", "#FFCCB6"
 )
+
+private val previewCategories = listOf(
+    Category(id = "1", name = "Housing", createdAt = Instant.EPOCH, userId = "u1", icon = "🏠", color = "#FFADAD"),
+    Category(id = "2", name = "Groceries", createdAt = Instant.EPOCH, userId = "u1", icon = "🛒", color = "#CAFFBF"),
+    Category(id = "3", name = "Dining Out", createdAt = Instant.EPOCH, userId = "u1", icon = "🍔", color = "#FFD6A5"),
+    Category(id = "4", name = "Transportation", createdAt = Instant.EPOCH, userId = "u1", icon = "🚗", color = "#A0C4FF"),
+    Category(id = "5", name = "Entertainment", createdAt = Instant.EPOCH, userId = "u1", icon = "🎬", color = "#BDB2FF"),
+    Category(id = "6", name = "Healthcare", createdAt = Instant.EPOCH, userId = "u1", icon = "💊", color = "#FFC6FF"),
+    Category(id = "7", name = "Utilities", createdAt = Instant.EPOCH, userId = "u1", icon = "💡", color = "#9BF6FF"),
+    Category(id = "8", name = "Coffee & Snacks", createdAt = Instant.EPOCH, userId = "u1", icon = "☕️", color = "#FFDAC1"),
+)
+
+@Preview(name = "Categories Screen - Light", showBackground = true)
+@Composable
+private fun CategoriesScreenPreview() {
+    PiggyTheme {
+        CategoriesScreenContent(
+            state = UiState(
+                isLoading = false,
+                categories = previewCategories
+            )
+        )
+    }
+}
+
+@Preview(
+    name = "Categories Screen - Dark",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun CategoriesScreenDarkPreview() {
+    PiggyTheme(darkTheme = true) {
+        CategoriesScreenContent(
+            state = UiState(
+                isLoading = false,
+                categories = previewCategories
+            )
+        )
+    }
+}
+
+@Preview(name = "Categories Screen - Empty", showBackground = true)
+@Composable
+private fun CategoriesScreenEmptyPreview() {
+    PiggyTheme {
+        CategoriesScreenContent(
+            state = UiState(
+                isLoading = false,
+                categories = emptyList()
+            )
+        )
+    }
+}

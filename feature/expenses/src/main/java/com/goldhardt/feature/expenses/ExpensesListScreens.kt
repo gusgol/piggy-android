@@ -45,18 +45,23 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import android.content.res.Configuration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.goldhardt.core.data.model.Category
 import com.goldhardt.core.data.model.Expense
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard
+import com.goldhardt.designsystem.theme.PiggyTheme
 import com.goldhardt.feature.expenses.ui.ExpenseEditorBottomSheet
 import java.text.NumberFormat
 import java.time.Instant
+import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -67,14 +72,9 @@ fun ExpensesListScreen(
     onNavigateToImport: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    // Add expense state
     val isAddingExpense = remember { mutableStateOf(false) }
-    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // Edit expense state
-    var editingExpense by remember { mutableStateOf<Expense?>(null) }
-    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    ConfigureTopBar (
+    ConfigureTopBar(
         title = stringResource(R.string.title_expenses),
         actions = {
             IconButton(onClick = onNavigateToImport) {
@@ -87,7 +87,10 @@ fun ExpensesListScreen(
                 viewModel.refreshCategories()
                 isAddingExpense.value = true
             }) {
-                Icon(imageVector = Icons.Outlined.Add, contentDescription = context.getString(R.string.title_expenses))
+                Icon(
+                    imageVector = Icons.Outlined.Add,
+                    contentDescription = context.getString(R.string.title_expenses)
+                )
             }
         }
     )
@@ -95,14 +98,65 @@ fun ExpensesListScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val categories by viewModel.categories.collectAsStateWithLifecycle()
 
+    ExpensesListScreenContent(
+        state = state,
+        categories = categories,
+        isAddingExpense = isAddingExpense.value,
+        onDismissAddExpense = { isAddingExpense.value = false },
+        onMonthChange = { viewModel.setMonth(it) },
+        onRefreshCategories = { viewModel.refreshCategories() },
+        onAddExpense = { name, amount, date, categoryId, isFixed ->
+            viewModel.addExpense(
+                name = name,
+                amount = amount,
+                date = date,
+                categoryId = categoryId,
+                isFixed = isFixed,
+            )
+            isAddingExpense.value = false
+        },
+        onUpdateExpense = { original, name, amount, date, categoryId, isFixed ->
+            viewModel.updateExpense(
+                original = original,
+                name = name,
+                amount = amount,
+                date = date,
+                categoryId = categoryId,
+                isFixed = isFixed,
+            )
+        },
+        onDeleteExpense = { expenseId ->
+            viewModel.deleteExpense(expenseId)
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun ExpensesListScreenContent(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    categories: List<Category> = emptyList(),
+    isAddingExpense: Boolean = false,
+    onDismissAddExpense: () -> Unit = {},
+    onMonthChange: (YearMonth) -> Unit = {},
+    onRefreshCategories: () -> Unit = {},
+    onAddExpense: (name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean) -> Unit = { _, _, _, _, _ -> },
+    onUpdateExpense: (original: Expense, name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean) -> Unit = { _, _, _, _, _, _ -> },
+    onDeleteExpense: (expenseId: String) -> Unit = {},
+) {
+    val addSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var editingExpense by remember { mutableStateOf<Expense?>(null) }
+    val editSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 16.dp)
     ) {
         MonthSelector(
             month = state.month,
-            onMonthChange = { viewModel.setMonth(it) },
+            onMonthChange = onMonthChange,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -121,14 +175,14 @@ fun ExpensesListScreen(
                 total = state.total,
                 items = state.expenses,
                 onClick = { exp ->
-                    viewModel.refreshCategories()
+                    onRefreshCategories()
                     editingExpense = exp
                 }
             )
         }
     }
 
-    if (isAddingExpense.value) {
+    if (isAddingExpense) {
         ExpenseEditorBottomSheet(
             title = stringResource(R.string.title_add_expense),
             sheetState = addSheetState,
@@ -138,17 +192,8 @@ fun ExpensesListScreen(
             initialDate = Instant.now(),
             initialCategoryId = categories.firstOrNull()?.id,
             initialIsFixed = false,
-            onDismiss = { isAddingExpense.value = false },
-            onSave = { name, amount, date, categoryId, isFixed ->
-                viewModel.addExpense(
-                    name = name,
-                    amount = amount,
-                    date = date,
-                    categoryId = categoryId,
-                    isFixed = isFixed,
-                )
-                isAddingExpense.value = false
-            }
+            onDismiss = onDismissAddExpense,
+            onSave = onAddExpense
         )
     }
 
@@ -164,19 +209,12 @@ fun ExpensesListScreen(
             initialIsFixed = current.isFixed,
             onDismiss = { editingExpense = null },
             onSave = { name, amount, date, categoryId, isFixed ->
-                viewModel.updateExpense(
-                    original = current,
-                    name = name,
-                    amount = amount,
-                    date = date,
-                    categoryId = categoryId,
-                    isFixed = isFixed,
-                )
+                onUpdateExpense(current, name, amount, date, categoryId, isFixed)
                 editingExpense = null
             },
             showDelete = true,
             onDelete = {
-                viewModel.deleteExpense(current.id)
+                onDeleteExpense(current.id)
                 editingExpense = null
             }
         )
@@ -305,27 +343,147 @@ private fun CategoryAvatar(name: String?, colorHex: String?, iconEmoji: String?)
 }
 
 
-@Composable
-@Preview
-private fun ExpenseItemPreview() {
-    val expense = Expense(
+private val previewExpenses = listOf(
+    Expense(
         id = "1",
-        name = "Dinner with friends",
-        amount = 50.0,
-        date = Instant.now(),
+        name = "Apartment Rent",
+        amount = 1450.0,
+        date = LocalDate.of(2026, 10, 1).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "housing",
+        isFixed = true,
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        categoryName = "Housing",
+        categoryIcon = "🏠",
+        categoryColor = "#FFADAD"
+    ),
+    Expense(
+        id = "2",
+        name = "Whole Foods Market",
+        amount = 184.50,
+        date = LocalDate.of(2026, 10, 12).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "groceries",
+        isFixed = false,
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        categoryName = "Groceries",
+        categoryIcon = "🛒",
+        categoryColor = "#CAFFBF"
+    ),
+    Expense(
+        id = "3",
+        name = "Dinner with Friends",
+        amount = 68.0,
+        date = LocalDate.of(2026, 10, 15).atStartOfDay(ZoneId.systemDefault()).toInstant(),
         categoryId = "food",
         isFixed = false,
-        createdAt = Instant.now(),
+        createdAt = Instant.EPOCH,
         userId = "user1",
-        categoryName = "Food",
+        categoryName = "Dining Out",
         categoryIcon = "🍔",
-        categoryColor = "#FFC107"
+        categoryColor = "#FFD6A5"
+    ),
+    Expense(
+        id = "4",
+        name = "City Metro Pass",
+        amount = 45.0,
+        date = LocalDate.of(2026, 10, 18).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "transport",
+        isFixed = true,
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        categoryName = "Transport",
+        categoryIcon = "🚗",
+        categoryColor = "#A0C4FF"
+    ),
+    Expense(
+        id = "5",
+        name = "Specialty Coffee Beans",
+        amount = 24.90,
+        date = LocalDate.of(2026, 10, 22).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "coffee",
+        isFixed = false,
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        categoryName = "Coffee",
+        categoryIcon = "☕️",
+        categoryColor = "#BDB2FF"
     )
-    Column(Modifier.padding(16.dp)) {
-        ExpenseItem(expense = expense)
-        Spacer(Modifier.height(16.dp))
-        ExpenseItem(expense = expense.copy(isFixed = true, categoryName = null))
-        Spacer(Modifier.height(16.dp))
-        ExpenseItem(expense = expense.copy(name = "Very very very long name for an expense that should be truncated", isFixed = true))
+)
+
+@Preview(name = "Expenses List Screen - Light", showBackground = true)
+@Composable
+private fun ExpensesListScreenPreview() {
+    PiggyTheme {
+        Surface {
+            ExpensesListScreenContent(
+                state = UiState(
+                    month = YearMonth.of(2026, 10),
+                    expenses = previewExpenses,
+                    total = previewExpenses.sumOf { it.amount },
+                    isLoading = false
+                )
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "Expenses List Screen - Dark",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun ExpensesListScreenDarkPreview() {
+    PiggyTheme(darkTheme = true) {
+        Surface {
+            ExpensesListScreenContent(
+                state = UiState(
+                    month = YearMonth.of(2026, 10),
+                    expenses = previewExpenses,
+                    total = previewExpenses.sumOf { it.amount },
+                    isLoading = false
+                )
+            )
+        }
+    }
+}
+
+@Preview(name = "Expenses List Screen - Empty", showBackground = true)
+@Composable
+private fun ExpensesListScreenEmptyPreview() {
+    PiggyTheme {
+        Surface {
+            ExpensesListScreenContent(
+                state = UiState(
+                    month = YearMonth.of(2026, 10),
+                    expenses = emptyList(),
+                    total = 0.0,
+                    isLoading = false
+                )
+            )
+        }
+    }
+}
+
+@Composable
+@Preview(name = "Expense Item", showBackground = true)
+private fun ExpenseItemPreview() {
+    val expense = previewExpenses[2]
+    PiggyTheme {
+        Surface {
+            Column(Modifier.padding(16.dp)) {
+                ExpenseItem(expense = expense)
+                Spacer(Modifier.height(16.dp))
+                ExpenseItem(expense = expense.copy(isFixed = true, categoryName = null))
+                Spacer(Modifier.height(16.dp))
+                ExpenseItem(
+                    expense = expense.copy(
+                        name = "Very very very long name for an expense that should be truncated",
+                        isFixed = true
+                    )
+                )
+            }
+        }
     }
 }

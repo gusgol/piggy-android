@@ -1,5 +1,6 @@
 package com.goldhardt.feature.expenses.import_expenses
 
+import android.content.res.Configuration
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,15 +54,19 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.data.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
+import com.goldhardt.designsystem.theme.PiggyTheme
 import com.goldhardt.feature.expenses.R
 import com.goldhardt.feature.expenses.import_expenses.domain.ImportedExpense
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -86,46 +92,74 @@ fun ImportExpensesScreen(
         }
     )
 
-    when (state.importStep) {
-        ImportStep.SELECT_FILE -> {
-            SelectFileStep(
-                onFileSelected = { uri ->
-                    viewModel.parseCsvFile {
-                        context.contentResolver.openInputStream(uri)
-                    }
-                },
-                isLoading = state.isLoading,
-                error = state.error
-            )
-        }
-        ImportStep.ASSIGN_CATEGORIES -> {
-            AssignCategoriesStep(
-                expenses = state.expenses,
-                categories = state.categories,
-                onCategorySelected = { index, categoryId ->
-                    viewModel.updateExpenseCategory(index, categoryId)
-                },
-                onIsFixedChanged = { index, isFixed ->
-                    viewModel.updateExpenseIsFixed(index, isFixed)
-                },
-                onBulkAssignCategory = { categoryId ->
-                    viewModel.bulkAssignCategory(categoryId)
-                },
-                onDeleteExpense = { index ->
-                    viewModel.deleteExpense(index)
-                },
-                onImport = { viewModel.importExpenses() },
-                isImporting = state.isImporting,
-                importProgress = state.importProgress,
-                error = state.error
-            )
-        }
-        ImportStep.COMPLETED -> {
-            CompletedStep(
-                importedCount = state.importedCount,
-                onDone = onNavigateBack,
-                onImportMore = { viewModel.reset() }
-            )
+    ImportExpensesScreenContent(
+        state = state,
+        onFileSelected = { uri ->
+            viewModel.parseCsvFile {
+                context.contentResolver.openInputStream(uri)
+            }
+        },
+        onCategorySelected = { index, categoryId ->
+            viewModel.updateExpenseCategory(index, categoryId)
+        },
+        onIsFixedChanged = { index, isFixed ->
+            viewModel.updateExpenseIsFixed(index, isFixed)
+        },
+        onBulkAssignCategory = { categoryId ->
+            viewModel.bulkAssignCategory(categoryId)
+        },
+        onDeleteExpense = { index ->
+            viewModel.deleteExpense(index)
+        },
+        onImport = { viewModel.importExpenses() },
+        onDone = onNavigateBack,
+        onImportMore = { viewModel.reset() }
+    )
+}
+
+@Composable
+internal fun ImportExpensesScreenContent(
+    state: ImportUiState,
+    modifier: Modifier = Modifier,
+    onFileSelected: (Uri) -> Unit = {},
+    onCategorySelected: (Int, String) -> Unit = { _, _ -> },
+    onIsFixedChanged: (Int, Boolean) -> Unit = { _, _ -> },
+    onBulkAssignCategory: (String) -> Unit = {},
+    onDeleteExpense: (Int) -> Unit = {},
+    onImport: () -> Unit = {},
+    onDone: () -> Unit = {},
+    onImportMore: () -> Unit = {},
+) {
+    Box(modifier = modifier.fillMaxSize()) {
+        when (state.importStep) {
+            ImportStep.SELECT_FILE -> {
+                SelectFileStep(
+                    onFileSelected = onFileSelected,
+                    isLoading = state.isLoading,
+                    error = state.error
+                )
+            }
+            ImportStep.ASSIGN_CATEGORIES -> {
+                AssignCategoriesStep(
+                    expenses = state.expenses,
+                    categories = state.categories,
+                    onCategorySelected = onCategorySelected,
+                    onIsFixedChanged = onIsFixedChanged,
+                    onBulkAssignCategory = onBulkAssignCategory,
+                    onDeleteExpense = onDeleteExpense,
+                    onImport = onImport,
+                    isImporting = state.isImporting,
+                    importProgress = state.importProgress,
+                    error = state.error
+                )
+            }
+            ImportStep.COMPLETED -> {
+                CompletedStep(
+                    importedCount = state.importedCount,
+                    onDone = onDone,
+                    onImportMore = onImportMore
+                )
+            }
         }
     }
 }
@@ -589,6 +623,125 @@ private fun CompletedStep(
             modifier = Modifier.fillMaxWidth(0.7f)
         ) {
             Text("Import Another File")
+        }
+    }
+}
+
+private val previewImportCategories = listOf(
+    Category(
+        id = "groceries",
+        name = "Groceries",
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        icon = "🛒",
+        color = "#CAFFBF"
+    ),
+    Category(
+        id = "dining",
+        name = "Dining Out",
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        icon = "🍔",
+        color = "#FFD6A5"
+    ),
+    Category(
+        id = "utilities",
+        name = "Utilities",
+        createdAt = Instant.EPOCH,
+        userId = "user1",
+        icon = "💡",
+        color = "#9BF6FF"
+    )
+)
+
+private val previewImportedExpenses = listOf(
+    ImportedExpense(
+        name = "Trader Joe's",
+        amount = 94.30,
+        date = LocalDate.of(2026, 10, 14).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "groceries",
+        isFixed = false,
+        originalLine = "2026-10-14,Trader Joe's,94.30"
+    ),
+    ImportedExpense(
+        name = "Electric Bill",
+        amount = 112.00,
+        date = LocalDate.of(2026, 10, 16).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = "utilities",
+        isFixed = true,
+        originalLine = "2026-10-16,Electric Bill,112.00"
+    ),
+    ImportedExpense(
+        name = "Blue Bottle Coffee",
+        amount = 11.50,
+        date = LocalDate.of(2026, 10, 19).atStartOfDay(ZoneId.systemDefault()).toInstant(),
+        categoryId = null,
+        isFixed = false,
+        originalLine = "2026-10-19,Blue Bottle Coffee,11.50"
+    )
+)
+
+@Preview(name = "Import Expenses - Assign Categories", showBackground = true)
+@Composable
+private fun ImportExpensesScreenPreview() {
+    PiggyTheme {
+        Surface {
+            ImportExpensesScreenContent(
+                state = ImportUiState(
+                    importStep = ImportStep.ASSIGN_CATEGORIES,
+                    expenses = previewImportedExpenses,
+                    categories = previewImportCategories
+                )
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "Import Expenses - Assign Categories (Dark)",
+    showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
+@Composable
+private fun ImportExpensesScreenDarkPreview() {
+    PiggyTheme(darkTheme = true) {
+        Surface {
+            ImportExpensesScreenContent(
+                state = ImportUiState(
+                    importStep = ImportStep.ASSIGN_CATEGORIES,
+                    expenses = previewImportedExpenses,
+                    categories = previewImportCategories
+                )
+            )
+        }
+    }
+}
+
+@Preview(name = "Import Expenses - Select File", showBackground = true)
+@Composable
+private fun ImportExpensesSelectFilePreview() {
+    PiggyTheme {
+        Surface {
+            ImportExpensesScreenContent(
+                state = ImportUiState(
+                    importStep = ImportStep.SELECT_FILE
+                )
+            )
+        }
+    }
+}
+
+@Preview(name = "Import Expenses - Completed", showBackground = true)
+@Composable
+private fun ImportExpensesCompletedPreview() {
+    PiggyTheme {
+        Surface {
+            ImportExpensesScreenContent(
+                state = ImportUiState(
+                    importStep = ImportStep.COMPLETED,
+                    importedCount = 18
+                )
+            )
         }
     }
 }
