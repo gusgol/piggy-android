@@ -1,7 +1,5 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("piggy.android.application")
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.ksp)
@@ -10,12 +8,9 @@ plugins {
 
 android {
     namespace = "com.goldhardt.piggy"
-    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.goldhardt.piggy"
-        minSdk = 34
-        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -30,16 +25,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
     }
 }
 

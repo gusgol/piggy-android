@@ -22,10 +22,6 @@ sealed interface Screen : NavKey {
         override val name: String = "Trends"
     }
 
-    @Serializable
-    data object Login : Screen {
-        override val name: String = "Login"
-    }
 
     @Serializable
     data object ImportExpenses : Screen {

@@ -1,19 +1,13 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.jetbrains.kotlin.serialization)
+    id("piggy.android.compose")
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.ksp)
 }
 
 android {
     namespace = "com.goldhardt.auth"
-    compileSdk = 36
 
     defaultConfig {
-        minSdk = 34
-
         testInstrumentationRunner = "dagger.hilt.android.testing.HiltTestRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -26,16 +20,6 @@ android {
                 "proguard-rules.pro"
             )
         }
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
     }
 }
 
@@ -60,12 +44,6 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.compiler)
-
-    // Nav
-    implementation(libs.androidx.navigation3.ui)
-
-    // ViewModel
-    implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 
     // Testing
     testImplementation(libs.junit)

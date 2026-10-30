@@ -1,6 +1,7 @@
 package com.goldhardt.feature.expenses.import_expenses.domain
 
 import java.io.ByteArrayInputStream
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -8,7 +9,7 @@ import org.junit.Test
 
 class CsvParserTest {
 
-    private val parser = CsvParser()
+    private val parser = CsvParser(Dispatchers.IO)
 
     @Test
     fun `parse returns Success for valid CSV lines`() = runTest {
@@ -18,7 +19,7 @@ class CsvParserTest {
             2025-10-31,Grocery Store,105.99
         """.trimIndent()
 
-        val result = parser.parse(ByteArrayInputStream(csv.toByteArray()))
+        val result = parser.parse { ByteArrayInputStream(csv.toByteArray()) }
 
         assertTrue(result is CsvParseResult.Success)
         val expenses = (result as CsvParseResult.Success).expenses
@@ -31,7 +32,7 @@ class CsvParserTest {
 
     @Test
     fun `parse returns Error when CSV is empty`() = runTest {
-        val result = parser.parse(ByteArrayInputStream(ByteArray(0)))
+        val result = parser.parse { ByteArrayInputStream(ByteArray(0)) }
 
         assertTrue(result is CsvParseResult.Error)
         assertEquals("CSV file is empty", (result as CsvParseResult.Error).message)
@@ -44,7 +45,7 @@ class CsvParserTest {
             30/10/2025,Coffee Shop,12.50
         """.trimIndent()
 
-        val result = parser.parse(ByteArrayInputStream(csv.toByteArray()))
+        val result = parser.parse { ByteArrayInputStream(csv.toByteArray()) }
 
         assertTrue(result is CsvParseResult.Error)
         assertTrue((result as CsvParseResult.Error).message.contains("Invalid date format"))
@@ -57,7 +58,7 @@ class CsvParserTest {
             2025-10-30,Coffee Shop,not-a-number
         """.trimIndent()
 
-        val result = parser.parse(ByteArrayInputStream(csv.toByteArray()))
+        val result = parser.parse { ByteArrayInputStream(csv.toByteArray()) }
 
         assertTrue(result is CsvParseResult.Error)
         assertTrue((result as CsvParseResult.Error).message.contains("Invalid amount"))
