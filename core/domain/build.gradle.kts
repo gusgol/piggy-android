@@ -1,24 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("piggy.android.library")
 }
 
 android {
     namespace = "com.goldhardt.core.domain"
-    compileSdk = 36
 
-    defaultConfig {
-        minSdk = 34
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
-    }
 }
 
 dependencies {

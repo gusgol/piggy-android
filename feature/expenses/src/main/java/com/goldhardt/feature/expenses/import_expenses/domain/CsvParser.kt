@@ -1,12 +1,13 @@
 package com.goldhardt.feature.expenses.import_expenses.domain
 
+import com.goldhardt.feature.expenses.di.IoDispatcher
 import java.io.InputStream
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
 /**
@@ -14,12 +15,16 @@ import kotlinx.coroutines.withContext
  * date,name,amount
  * 2025-10-30,EC *PACCOPET,200.71
  */
-class CsvParser @Inject constructor() {
+class CsvParser @Inject constructor(
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+) {
 
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    suspend fun parse(inputStream: InputStream): CsvParseResult = withContext(Dispatchers.IO) {
+    suspend fun parse(openStream: () -> InputStream?): CsvParseResult = withContext(ioDispatcher) {
         try {
+            val inputStream = openStream()
+                ?: return@withContext CsvParseResult.Error("Failed to open CSV file")
             val expenses = mutableListOf<ImportedExpense>()
             val lines = inputStream.bufferedReader().use { it.readLines() }
 

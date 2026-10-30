@@ -12,14 +12,12 @@ import com.goldhardt.feature.expenses.import_expenses.domain.ImportedExpense
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.InputStream
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class ImportViewModel @Inject constructor(
@@ -52,16 +50,12 @@ class ImportViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val result = withContext(Dispatchers.IO) {
-                try {
-                    openStream()?.use { inputStream ->
-                        csvParser.parse(inputStream)
-                    } ?: CsvParseResult.Error("Failed to open CSV file")
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Exception) {
-                    CsvParseResult.Error("Couldn't read the selected file. Please try again.")
-                }
+            val result = try {
+                csvParser.parse(openStream)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                CsvParseResult.Error("Couldn't read the selected file. Please try again.")
             }
 
             when (result) {
