@@ -53,6 +53,9 @@ import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard
 import com.goldhardt.designsystem.theme.PiggyTheme
+import com.goldhardt.feature.trends.domain.DayPiece
+import com.goldhardt.feature.trends.domain.DayStack
+import com.goldhardt.feature.trends.domain.Slice
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -109,6 +112,13 @@ internal fun TrendsScreenContent(
             return
         }
 
+        state.error?.let { error ->
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(error, color = MaterialTheme.colorScheme.error)
+            }
+            return
+        }
+
         if (state.total <= 0.0) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No expenses for this month")
@@ -145,8 +155,8 @@ internal fun TrendsScreenContent(
                         var selected by remember { mutableStateOf<PieSlice?>(null) }
                         val slicesUi = state.slices.map {
                             PieSlice(
-                                label = it.categoryName,
-                                value = it.amount.toFloat(),
+                                label = it.name,
+                                value = it.total.toFloat(),
                                 color = parseHexColorOrDefault(it.colorHex, MaterialTheme.colorScheme.tertiaryContainer)
                             )
                         }
@@ -316,7 +326,7 @@ private fun CategoryGroupRow(data: CategoryGroupUi) {
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(text = data.name, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "${data.count} expenses",
+                    text = "${data.items.size} expenses",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -408,7 +418,7 @@ private fun SelectedSliceInfo(
 
 @Composable
 private fun DailyStackedBarChart(
-    stacks: List<DayStackUi>,
+    stacks: List<DayStack>,
     chartHeight: Dp,
     barWidth: Dp,
     barSpacing: Dp,
@@ -431,7 +441,7 @@ private fun DailyStackedBarChart(
 @Composable
 private fun DayBar(
     yearMonth: java.time.YearMonth,
-    stack: DayStackUi,
+    stack: DayStack,
     maxTotal: Double,
     chartHeight: Dp,
     barWidth: Dp,
@@ -491,10 +501,10 @@ private val previewTrendsState = TrendsUiState(
     isLoading = false,
     total = 2145.90,
     slices = listOf(
-        CategorySliceUi(categoryId = "housing", categoryName = "Housing", colorHex = "#FFADAD", amount = 1450.0),
-        CategorySliceUi(categoryId = "groceries", categoryName = "Groceries", colorHex = "#CAFFBF", amount = 385.50),
-        CategorySliceUi(categoryId = "dining", categoryName = "Dining Out", colorHex = "#FFD6A5", amount = 198.40),
-        CategorySliceUi(categoryId = "transport", categoryName = "Transport", colorHex = "#A0C4FF", amount = 112.00),
+        Slice(categoryId = "housing", name = "Housing", colorHex = "#FFADAD", total = 1450.0),
+        Slice(categoryId = "groceries", name = "Groceries", colorHex = "#CAFFBF", total = 385.50),
+        Slice(categoryId = "dining", name = "Dining Out", colorHex = "#FFD6A5", total = 198.40),
+        Slice(categoryId = "transport", name = "Transport", colorHex = "#A0C4FF", total = 112.00),
     ),
     categories = listOf(
         CategoryGroupUi(
@@ -503,7 +513,6 @@ private val previewTrendsState = TrendsUiState(
             icon = "🏠",
             colorHex = "#FFADAD",
             total = 1450.0,
-            count = 1,
             items = listOf(
                 CategoryExpenseItemUi(name = "Apartment Rent", amount = 1450.0, dateLabel = "Oct 1")
             )
@@ -514,7 +523,6 @@ private val previewTrendsState = TrendsUiState(
             icon = "🛒",
             colorHex = "#CAFFBF",
             total = 385.50,
-            count = 3,
             items = listOf(
                 CategoryExpenseItemUi(name = "Whole Foods", amount = 184.50, dateLabel = "Oct 5"),
                 CategoryExpenseItemUi(name = "Trader Joe's", amount = 115.00, dateLabel = "Oct 12"),
@@ -527,7 +535,6 @@ private val previewTrendsState = TrendsUiState(
             icon = "🍔",
             colorHex = "#FFD6A5",
             total = 198.40,
-            count = 4,
             items = listOf(
                 CategoryExpenseItemUi(name = "Sushi Night", amount = 84.00, dateLabel = "Oct 8"),
                 CategoryExpenseItemUi(name = "Brunch Cafe", amount = 52.40, dateLabel = "Oct 14"),
@@ -540,7 +547,6 @@ private val previewTrendsState = TrendsUiState(
             icon = "🚗",
             colorHex = "#A0C4FF",
             total = 112.00,
-            count = 2,
             items = listOf(
                 CategoryExpenseItemUi(name = "City Metro Pass", amount = 45.00, dateLabel = "Oct 2"),
                 CategoryExpenseItemUi(name = "Airport Ride", amount = 67.00, dateLabel = "Oct 17")
@@ -549,16 +555,16 @@ private val previewTrendsState = TrendsUiState(
     ),
     dayStacks = (1..14).map { day ->
         val pieces = when (day) {
-            1 -> listOf(DayPieceUi("housing", 450.0, "#FFADAD"))
-            2 -> listOf(DayPieceUi("transport", 45.0, "#A0C4FF"))
-            5 -> listOf(DayPieceUi("groceries", 184.50, "#CAFFBF"))
-            8 -> listOf(DayPieceUi("dining", 84.0, "#FFD6A5"), DayPieceUi("transport", 24.0, "#A0C4FF"))
-            10 -> listOf(DayPieceUi("dining", 42.0, "#FFD6A5"))
-            12 -> listOf(DayPieceUi("groceries", 115.0, "#CAFFBF"), DayPieceUi("dining", 38.0, "#FFD6A5"))
-            14 -> listOf(DayPieceUi("dining", 52.40, "#FFD6A5"))
+            1 -> listOf(DayPiece("housing", 450.0, "#FFADAD"))
+            2 -> listOf(DayPiece("transport", 45.0, "#A0C4FF"))
+            5 -> listOf(DayPiece("groceries", 184.50, "#CAFFBF"))
+            8 -> listOf(DayPiece("dining", 84.0, "#FFD6A5"), DayPiece("transport", 24.0, "#A0C4FF"))
+            10 -> listOf(DayPiece("dining", 42.0, "#FFD6A5"))
+            12 -> listOf(DayPiece("groceries", 115.0, "#CAFFBF"), DayPiece("dining", 38.0, "#FFD6A5"))
+            14 -> listOf(DayPiece("dining", 52.40, "#FFD6A5"))
             else -> emptyList()
         }
-        DayStackUi(day = day, pieces = pieces)
+        DayStack(day = day, pieces = pieces)
     }
 )
 

@@ -12,6 +12,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import java.security.SecureRandom
 import javax.inject.Inject
+import kotlinx.coroutines.CancellationException
 
 /**
  * Handles the UI-dependent part of Google Sign-In (showing the picker).
@@ -61,6 +62,8 @@ class GoogleSignInLauncher @Inject constructor(
                 )
                 Result.success(extractIdToken(result.credential))
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: GetCredentialCancellationException) {
             Result.failure(e)
         } catch (e: GetCredentialException) {

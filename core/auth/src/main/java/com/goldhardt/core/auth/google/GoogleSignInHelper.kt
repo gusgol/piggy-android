@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,6 +19,8 @@ class GoogleSignInHelper @Inject constructor(
         try {
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
             Log.d(TAG, "Sign out successful")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Sign out failed", e)
         }

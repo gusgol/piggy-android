@@ -15,11 +15,13 @@ import com.goldhardt.feature.expenses.domain.DeleteExpenseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -49,14 +51,16 @@ class ExpensesListViewModel @Inject constructor(
 
     private val _categories = MutableStateFlow<List<Category>>(emptyList())
     val categories: StateFlow<List<Category>> = _categories.asStateFlow()
+    private val mutationError = MutableStateFlow<String?>(null)
 
     val uiState: StateFlow<UiState> =
         selectedMonth
             .flatMapLatest { month ->
                 observeMonthExpenses(month)
                     .map { expenses -> createUiState(month, expenses, isLoading = false) }
-                    .catch { e -> emit(createUiState(month, isLoading = false, error = e.message)) }
+                    .catch { emit(createUiState(month, isLoading = false, error = "Couldn't load expenses. Please try again.")) }
             }
+            .combine(mutationError) { state, error -> state.copy(error = error ?: state.error) }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
@@ -71,15 +75,20 @@ class ExpensesListViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _categories.value = getUserCategoriesUseCase()
-            } catch (_: Throwable) {
+                mutationError.value = null
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 _categories.value = emptyList()
+                mutationError.value = "Couldn't load categories. Please try again."
             }
         }
     }
 
-    fun addExpense(name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+    fun addExpense(name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 addExpenseUseCase(
                     ExpenseFormData(
                         name = name.trim(),
@@ -89,15 +98,18 @@ class ExpensesListViewModel @Inject constructor(
                         isFixed = isFixed,
                     )
                 )
-            } catch (t: Throwable) {
-                onError(t)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't add expense. Please try again."
             }
         }
     }
 
-    fun updateExpense(original: Expense, name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+    fun updateExpense(original: Expense, name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 val update = ExpenseUpdate(
                     name = original.name.takeIf { it != name }?.let { name.trim() },
                     amount = original.amount.takeIf { it != amount }?.let { amount },
@@ -106,18 +118,23 @@ class ExpensesListViewModel @Inject constructor(
                     isFixed = original.isFixed.takeIf { it != isFixed }?.let { isFixed },
                 )
                 updateExpenseUseCase(original.id, update)
-            } catch (t: Throwable) {
-                onError(t)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't update expense. Please try again."
             }
         }
     }
 
-    fun deleteExpense(expenseId: String, onError: (Throwable) -> Unit = {}) {
+    fun deleteExpense(expenseId: String) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 deleteExpenseUseCase(expenseId)
-            } catch (t: Throwable) {
-                onError(t)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                mutationError.value = "Couldn't delete expense. Please try again."
             }
         }
     }

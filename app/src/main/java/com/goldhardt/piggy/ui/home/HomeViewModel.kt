@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
@@ -15,12 +16,19 @@ class HomeViewModel @Inject constructor(
     userSession: UserSession,
 ) : ViewModel() {
 
-    val user: StateFlow<User?> = userSession
+    val state: StateFlow<HomeState> = userSession
         .authState
+        .map { user -> if (user == null) HomeState.SignedOut else HomeState.SignedIn(user) }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = userSession.currentUserOrNull
+            initialValue = HomeState.Loading
         )
+}
+
+sealed interface HomeState {
+    data object Loading : HomeState
+    data object SignedOut : HomeState
+    data class SignedIn(val user: User) : HomeState
 }
 
