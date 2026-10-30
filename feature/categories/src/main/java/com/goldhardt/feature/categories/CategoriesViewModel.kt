@@ -2,7 +2,7 @@ package com.goldhardt.feature.categories
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import com.goldhardt.feature.categories.domain.AddCategoryUseCase
 import com.goldhardt.feature.categories.domain.DeleteCategoryUseCase
 import com.goldhardt.feature.categories.domain.ObserveUserCategoriesUseCase

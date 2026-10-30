@@ -2,7 +2,7 @@ package com.goldhardt.feature.expenses.import_expenses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
 import com.goldhardt.feature.expenses.import_expenses.domain.CsvParseResult
 import com.goldhardt.feature.expenses.import_expenses.domain.CsvParser

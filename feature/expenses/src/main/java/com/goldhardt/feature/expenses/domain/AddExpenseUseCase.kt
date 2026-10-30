@@ -1,9 +1,9 @@
 package com.goldhardt.feature.expenses.domain
 
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.repository.ExpenseRepository
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.repository.ExpenseRepository
 import javax.inject.Inject
 
 class AddExpenseUseCase @Inject constructor(

@@ -46,6 +46,7 @@ android {
 dependencies {
 
     implementation(projects.core.designsystem)
+    implementation(projects.core.data)
     implementation(projects.feature.expenses)
     implementation(projects.feature.categories)
     implementation(projects.feature.auth)

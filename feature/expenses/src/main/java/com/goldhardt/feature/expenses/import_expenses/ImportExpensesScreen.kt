@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.goldhardt.core.data.model.Category
+import com.goldhardt.core.domain.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.theme.PiggyTheme
 import com.goldhardt.feature.expenses.R

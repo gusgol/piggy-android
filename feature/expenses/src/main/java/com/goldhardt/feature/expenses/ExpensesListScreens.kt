@@ -51,8 +51,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.goldhardt.core.data.model.Category
-import com.goldhardt.core.data.model.Expense
+import com.goldhardt.core.domain.model.Category
+import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.TotalAmountCard

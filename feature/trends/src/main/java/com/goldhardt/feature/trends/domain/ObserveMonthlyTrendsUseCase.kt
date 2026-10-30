@@ -1,8 +1,8 @@
 package com.goldhardt.feature.trends.domain
 
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.repository.ExpenseRepository
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.repository.ExpenseRepository
 import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

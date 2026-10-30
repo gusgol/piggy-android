@@ -39,7 +39,7 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.data)
+    implementation(projects.core.domain)
     implementation(projects.core.auth)
     implementation(projects.core.designsystem)
 

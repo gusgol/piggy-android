@@ -1,6 +1,6 @@
 package com.goldhardt.feature.expenses.domain
 
-import com.goldhardt.core.data.repository.ExpenseRepository
+import com.goldhardt.core.domain.repository.ExpenseRepository
 import javax.inject.Inject
 
 class DeleteExpenseUseCase @Inject constructor(

@@ -3,10 +3,10 @@ package com.goldhardt.feature.trends.domain
 import com.goldhardt.core.auth.model.User
 import com.goldhardt.core.auth.repository.AuthRepository
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.data.model.Expense
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.model.ExpenseUpdate
-import com.goldhardt.core.data.repository.ExpenseRepository
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.model.ExpenseUpdate
+import com.goldhardt.core.domain.repository.ExpenseRepository
 import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth

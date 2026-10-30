@@ -1,8 +1,8 @@
 package com.goldhardt.feature.categories.domain
 
 import com.goldhardt.core.auth.session.UserSession
-import com.goldhardt.core.data.model.Category
-import com.goldhardt.core.data.repository.CategoryRepository
+import com.goldhardt.core.domain.model.Category
+import com.goldhardt.core.domain.repository.CategoryRepository
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

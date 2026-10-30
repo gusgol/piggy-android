@@ -1,9 +1,9 @@
 package com.goldhardt.core.data.datasource
 
-import com.goldhardt.core.data.model.Expense
+import com.goldhardt.core.domain.model.Expense
+import com.goldhardt.core.domain.model.ExpenseFormData
+import com.goldhardt.core.domain.model.ExpenseUpdate
 import com.goldhardt.core.data.model.ExpenseDocument
-import com.goldhardt.core.data.model.ExpenseFormData
-import com.goldhardt.core.data.model.ExpenseUpdate
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
