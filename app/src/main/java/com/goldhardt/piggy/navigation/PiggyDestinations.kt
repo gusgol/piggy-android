@@ -31,4 +31,9 @@ sealed interface Screen : NavKey {
     data object ImportExpenses : Screen {
         override val name: String = "Import"
     }
+
+    @Serializable
+    data object Settings : Screen {
+        override val name: String = "Settings"
+    }
 }

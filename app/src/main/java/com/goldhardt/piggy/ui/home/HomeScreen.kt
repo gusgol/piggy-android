@@ -1,6 +1,7 @@
 package com.goldhardt.piggy.ui.home
 
 import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -35,6 +36,7 @@ fun HomeScreen(
     user: User?,
     current: Screen,
     onItemClick: (Screen) -> Unit,
+    onAvatarClick: () -> Unit = {},
     content: @Composable () -> Unit
 ) {
     val topBar = remember { TopBarController() }
@@ -57,16 +59,20 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
+                                    .clickable(onClick = onAvatarClick)
                             )
                         }
-                    } else null
+                    } else null,
+                    onNavigationIconClick = onAvatarClick
                 )
             },
             bottomBar = {
-                PiggyBottomBar(
-                    current,
-                    onItemClick
-                )
+                if (current != Screen.Settings) {
+                    PiggyBottomBar(
+                        current,
+                        onItemClick
+                    )
+                }
             }
         ) { paddingValues ->
             Box(

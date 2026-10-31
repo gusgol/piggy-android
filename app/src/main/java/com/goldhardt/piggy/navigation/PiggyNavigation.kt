@@ -8,6 +8,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.goldhardt.auth.LoginScreen
+import com.goldhardt.auth.SettingsScreen
 import com.goldhardt.feature.categories.CategoriesScreen
 import com.goldhardt.feature.expenses.ExpensesListScreen
 import com.goldhardt.feature.expenses.import_expenses.ImportExpensesScreen
@@ -37,6 +38,11 @@ fun PiggyNavigation(
                 backStack.clear()
                 backStack.add(targetScreen)
             }
+        },
+        onAvatarClick = {
+            if (currentScreen != Screen.Settings) {
+                backStack.add(Screen.Settings)
+            }
         }
     ) {
         NavDisplay(
@@ -59,6 +65,13 @@ fun PiggyNavigation(
                     }
                     is Screen.ImportExpenses -> NavEntry(key) {
                         ImportExpensesScreen(
+                            onNavigateBack = {
+                                backStack.removeLastOrNull()
+                            }
+                        )
+                    }
+                    is Screen.Settings -> NavEntry(key) {
+                        SettingsScreen(
                             onNavigateBack = {
                                 backStack.removeLastOrNull()
                             }

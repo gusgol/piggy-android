@@ -1,6 +1,7 @@
 package com.goldhardt.designsystem.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 
 data class TopBarConfig(
     val title: String? = null,
+    val navigationIcon: (@Composable () -> Unit)? = null,
     val actions: @Composable RowScope.() -> Unit = {}
 )
 
@@ -36,9 +38,10 @@ class TopBarController {
 
     fun set(
         title: String? = null,
+        navigationIcon: (@Composable () -> Unit)? = null,
         actions: @Composable RowScope.() -> Unit = {}
     ) {
-        config = TopBarConfig(title, actions)
+        config = TopBarConfig(title, navigationIcon, actions)
     }
 
     fun clear() {
@@ -49,11 +52,12 @@ class TopBarController {
 @Composable
 fun ConfigureTopBar(
     title: String?,
+    navigationIcon: (@Composable () -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val topBar = LocalTopBarController.current
     SideEffect {
-        topBar.set(title, actions)
+        topBar.set(title, navigationIcon, actions)
     }
 }
 
@@ -66,6 +70,7 @@ val LocalTopBarController = staticCompositionLocalOf<TopBarController> {
 fun PiggyTopBar(
     topBarController: TopBarController,
     navigationIcon: (@Composable () -> Unit)? = null,
+    onNavigationIconClick: (() -> Unit)? = null,
 ) {
     CenterAlignedTopAppBar(
         navigationIcon = {
@@ -73,10 +78,11 @@ fun PiggyTopBar(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
             ) {
-                if (navigationIcon != null) {
-                    navigationIcon()
-                } else {
-                    FallbackAvatar()
+                val configuredNavIcon = topBarController.config.navigationIcon
+                when {
+                    configuredNavIcon != null -> configuredNavIcon()
+                    navigationIcon != null -> navigationIcon()
+                    else -> FallbackAvatar(onClick = onNavigationIconClick)
                 }
             }
         },
@@ -95,9 +101,11 @@ fun PiggyTopBar(
     )
 }
 
-// Kotlin
 @Composable
-private fun FallbackAvatar(modifier: Modifier = Modifier) {
+private fun FallbackAvatar(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     val pink = MaterialTheme.colorScheme.secondaryContainer
     Box(
         contentAlignment = Alignment.Center,
@@ -105,6 +113,13 @@ private fun FallbackAvatar(modifier: Modifier = Modifier) {
             .size(36.dp)
             .clip(CircleShape)
             .background(pink)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Text(
             text = "🐷",

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="login_app_title">Piggy</string>
+    <string name="login_app_subtitle">Your personal expense tracker</string>
+    <string name="login_continue_with_google">Continue with Google</string>
+    <string name="login_error_default">Sign-in was cancelled or failed. Please try again.</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_navigate_back">Back</string>
+    <string name="settings_account_badge_caps">GOOGLE ACCOUNT</string>
+    <string name="settings_default_user_name">Piggy Member</string>
+    <string name="settings_section_account_caps">ACCOUNT</string>
+    <string name="settings_logout_title">Log out</string>
+    <string name="settings_logout_subtitle">Sign out of your Google account on this device</string>
+    <string name="settings_footer_app_version">Piggy v1.0</string>
+    <string name="settings_footer_tagline">Mindful wealth &amp; expense tracker</string>
+</resources>
