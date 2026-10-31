@@ -1,18 +1,23 @@
 package com.goldhardt.feature.trends
 
+import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,13 +25,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,15 +47,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import android.content.res.Configuration
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -52,232 +64,178 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
 import com.goldhardt.designsystem.components.PiggyNavigationBarDefaults
-import com.goldhardt.designsystem.components.TotalAmountCard
+import com.goldhardt.designsystem.theme.PiggyColors
+import com.goldhardt.designsystem.theme.PiggyShapeTokens
+import com.goldhardt.designsystem.theme.PiggySpacing
 import com.goldhardt.designsystem.theme.PiggyTheme
+import com.goldhardt.designsystem.theme.PiggyTypography
+import com.goldhardt.designsystem.theme.isPiggyDarkTheme
+import com.goldhardt.designsystem.theme.piggyCardBorderColor
+import com.goldhardt.designsystem.theme.piggyCardContainerColor
 import java.text.NumberFormat
-import java.util.Locale
-import androidx.compose.foundation.gestures.detectTapGestures
-import kotlin.math.atan2
-import kotlin.math.sqrt
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
+import java.util.Locale
+import kotlin.math.min
 
 @Composable
 fun TrendsScreen(
     modifier: Modifier = Modifier,
-    viewModel: TrendsViewModel = hiltViewModel()
+    viewModel: TrendsViewModel = hiltViewModel(),
 ) {
-    ConfigureTopBar(
-        title = stringResource(R.string.title_trends)
-    )
-
+    ConfigureTopBar(title = stringResource(R.string.title_trends))
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-
-    TrendsScreenContent(
-        state = state,
-        modifier = modifier,
-        onMonthChange = { viewModel.setMonth(it) }
-    )
+    TrendsScreenContent(state, modifier, viewModel::setMonth)
 }
 
 @Composable
 internal fun TrendsScreenContent(
     state: TrendsUiState,
     modifier: Modifier = Modifier,
-    onMonthChange: (YearMonth) -> Unit = {}
+    onMonthChange: (YearMonth) -> Unit = {},
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        MonthSelector(
-            month = state.month,
-            onMonthChange = onMonthChange,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Loading…")
-            }
-            return
-        }
-
-        if (state.total <= 0.0) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No expenses for this month")
-            }
-            return
-        }
-
+    var selectedTab by rememberSaveable { mutableStateOf(TrendsTab.Current) }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val contentWidth = maxWidth.coerceAtMost(680.dp)
+        val horizontalMargin = if (maxWidth < 400.dp) PiggySpacing.marginSm else PiggySpacing.margin
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(0.dp),
+            modifier = Modifier.widthIn(max = contentWidth).fillMaxWidth().align(Alignment.TopCenter),
+            verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceXl),
             contentPadding = PaddingValues(
-                bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + 24.dp
-            )
+                start = horizontalMargin, end = horizontalMargin, top = PiggySpacing.spaceSm,
+                bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + PiggySpacing.space2xl,
+            ),
         ) {
-            item { TotalAmountCard(total = state.total) }
-
-            // Pie chart section
             item {
-                Surface(
-                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
-                    tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "By category",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        var selected by remember { mutableStateOf<PieSlice?>(null) }
-                        val slicesUi = state.slices.map {
-                            PieSlice(
-                                label = it.categoryName,
-                                value = it.amount.toFloat(),
-                                color = parseHexColorOrDefault(it.colorHex, MaterialTheme.colorScheme.tertiaryContainer)
-                            )
-                        }
-                        SimplePieChart(
-                            slices = slicesUi,
-                            chartSize = 180.dp,
-                            onSliceClick = { selected = it }
-                        )
-                        AnimatedVisibility(
-                            modifier = Modifier.padding(top = 16.dp),
-                            visible = selected != null,
-                            enter = expandVertically(animationSpec = tween(durationMillis = 150)) + fadeIn(animationSpec = tween(durationMillis = 120)),
-                            exit = shrinkVertically(animationSpec = tween(durationMillis = 150)) + fadeOut(animationSpec = tween(durationMillis = 120))
-                        ) {
-                            selected?.let { s ->
-                                SelectedSliceInfo(
-                                    slice = s,
-                                    totalAmount = slicesUi.sumOf { it.value.toDouble() }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Daily stacked bar chart section
-            item {
-                Surface(
-                    modifier = Modifier.padding(top = 0.dp, bottom = 12.dp),
-                    tonalElevation = 1.dp,
-                    shape = MaterialTheme.shapes.large,
-                    color = MaterialTheme.colorScheme.background,
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "By day",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        DailyStackedBarChart(
-                            stacks = state.dayStacks,
-                            chartHeight = 180.dp,
-                            barWidth = 18.dp,
-                            barSpacing = 6.dp,
-                            yearMonth = state.month
+                PrimaryTabRow(selectedTabIndex = selectedTab.ordinal) {
+                    TrendsTab.entries.forEach { tab ->
+                        Tab(
+                            selected = selectedTab == tab,
+                            onClick = { selectedTab = tab },
+                            text = { Text(stringResource(tab.titleRes)) },
                         )
                     }
                 }
             }
-
-            // Grouped categories as a simple list with dividers
-            itemsIndexed(state.categories, key = { _, item -> item.id }) { index, cat ->
-                if (index > 0) HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceContainer
-                )
-                CategoryGroupRow(data = cat)
+            if (selectedTab == TrendsTab.Current) {
+                item { MonthSelector(state.month, onMonthChange, Modifier.fillMaxWidth()) }
+                when {
+                    state.isLoading -> item { LoadingState() }
+                    state.total <= 0.0 -> item { EmptyTrendsState() }
+                    else -> {
+                        item { SpendingSummaryCard(state.total, state.categories.sumOf { it.count }) }
+                        item { CategoryAnalyticsCard(state.slices) }
+                        item { DailySpendingCard(state.dayStacks, state.month) }
+                        item { CategoryDetailsHeading() }
+                        items(state.categories, key = { it.id }) { CategoryDetailCard(it) }
+                    }
+                }
             }
         }
     }
 }
 
-private fun parseHexColorOrDefault(hex: String?, fallback: Color): Color {
-    if (hex.isNullOrBlank()) return fallback
-    return try { Color(hex.toColorInt()) } catch (_: Throwable) { fallback }
+private enum class TrendsTab(val titleRes: Int) {
+    Current(R.string.tab_current),
+    Year(R.string.tab_year),
 }
 
-private data class PieSlice(val label: String, val value: Float, val color: Color)
+@Composable
+private fun LoadingState() {
+    Box(Modifier.fillMaxWidth().padding(vertical = 80.dp), contentAlignment = Alignment.Center) {
+        Text("Loading…", style = MaterialTheme.typography.bodyMedium)
+    }
+}
 
 @Composable
-private fun SimplePieChart(
-    slices: List<PieSlice>,
-    chartSize: Dp,
-    stroke: Dp = 24.dp,
-    onSliceClick: (PieSlice) -> Unit = {}
-) {
-    val total = slices.sumOf { it.value.toDouble() }.toFloat().coerceAtLeast(0.0001f)
-    val density = LocalDensity.current
-    val diameterPx = with(density) { chartSize.toPx() }
-    val topPaddingPx = with(density) { 8.dp.toPx() }
-    val strokePx = with(density) { stroke.toPx() }
-
-    Canvas(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(chartSize + 16.dp)
-            .pointerInput(slices, diameterPx, topPaddingPx, strokePx, total) {
-                detectTapGestures(onTap = { offset ->
-                    val left = (size.width.toFloat() - diameterPx) / 2f
-                    val centerX = left + diameterPx / 2f
-                    val centerY = topPaddingPx + diameterPx / 2f
-                    val dx = offset.x - centerX
-                    val dy = offset.y - centerY
-                    val r = sqrt(dx * dx + dy * dy)
-                    val radius = diameterPx / 2f
-                    if (r < radius - strokePx / 2f || r > radius + strokePx / 2f) return@detectTapGestures
-                    val deg = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
-                    val fromTop = (deg + 450f) % 360f
-                    var start = 0f
-                    for (slice in slices) {
-                        val sweep = (slice.value / total) * 360f
-                        if (fromTop >= start && fromTop < start + sweep) {
-                            onSliceClick(slice)
-                            break
-                        }
-                        start += sweep
-                    }
-                })
-            }
+private fun SpendingSummaryCard(total: Double, expenseCount: Int) {
+    val currency = remember { NumberFormat.getCurrencyInstance() }
+    val borderColor = if (isPiggyDarkTheme()) {
+        piggyCardBorderColor()
+    } else {
+        PiggyColors.Emerald500.copy(alpha = 0.16f)
+    }
+    Surface(
+        modifier = Modifier.fillMaxWidth(), shape = PiggyShapeTokens.Card,
+        color = piggyCardContainerColor(),
+        border = BorderStroke(1.dp, borderColor), shadowElevation = 2.dp,
     ) {
-        val diameter = chartSize.toPx()
-        val left = (size.width - diameter) / 2f
-        val top = 8.dp.toPx()
+        Column(Modifier.fillMaxWidth().padding(PiggySpacing.spaceXl), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("TOTAL SPENT", style = PiggyTypography.labelCaps, color = PiggyColors.TextMuted)
+            Spacer(Modifier.height(PiggySpacing.spaceXs))
+            Text(currency.format(total), style = PiggyTypography.displayCurrencyMobile, color = PiggyColors.TextStrong)
+            Spacer(Modifier.height(PiggySpacing.spaceMd))
+            Surface(shape = PiggyShapeTokens.Pill, color = PiggyColors.Emerald50) {
+                Text(
+                    "$expenseCount ${if (expenseCount == 1) "expense" else "expenses"}",
+                    style = PiggyTypography.badgeLabel, color = PiggyColors.Emerald700,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryAnalyticsCard(slices: List<CategorySliceUi>) {
+    val dominant = slices.maxByOrNull { it.amount }
+    val total = slices.sumOf { it.amount }.coerceAtLeast(0.0001)
+    val colors = slices.map { categoryColor(it.categoryName, it.colorHex) }
+    AnalyticsCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle("By category", Modifier.weight(1f))
+            Text("${slices.size} ${if (slices.size == 1) "Category" else "Categories"}", style = PiggyTypography.bodyMd, color = PiggyColors.TextMuted)
+        }
+        Spacer(Modifier.height(PiggySpacing.spaceLg))
+        Box(Modifier.fillMaxWidth().height(238.dp), contentAlignment = Alignment.Center) {
+            DonutChart(slices, colors, Modifier.size(206.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("DOMINANT", style = PiggyTypography.labelCaps, color = PiggyColors.TextMuted)
+                Text(dominant?.categoryName.orEmpty(), style = MaterialTheme.typography.headlineMedium, color = PiggyColors.TextStrong)
+                Text(
+                    dominant?.let { String.format(Locale.getDefault(), "%.1f%%", it.amount / total * 100) }.orEmpty(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = dominant?.let { categoryColor(it.categoryName, it.colorHex) } ?: PiggyColors.TextMuted,
+                )
+            }
+        }
+        Spacer(Modifier.height(PiggySpacing.spaceLg))
+        CategoryLegend(slices, colors, total)
+    }
+}
+
+@Composable
+private fun AnalyticsCard(content: @Composable ColumnScope.() -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(), shape = PiggyShapeTokens.Card,
+        color = piggyCardContainerColor(),
+        border = BorderStroke(1.dp, piggyCardBorderColor()), shadowElevation = 1.dp,
+    ) { Column(Modifier.padding(PiggySpacing.spaceXl), content = content) }
+}
+
+@Composable
+private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        Surface(Modifier.size(10.dp), PiggyShapeTokens.Pill, PiggyColors.Emerald700) {}
+        Spacer(Modifier.width(PiggySpacing.spaceSm))
+        Text(text, style = MaterialTheme.typography.headlineMedium, color = PiggyColors.TextStrong)
+    }
+}
+
+@Composable
+private fun DonutChart(slices: List<CategorySliceUi>, colors: List<Color>, modifier: Modifier = Modifier) {
+    val total = slices.sumOf { it.amount }.coerceAtLeast(0.0001)
+    Canvas(modifier) {
+        val stroke = 24.dp.toPx()
         var startAngle = -90f
-        slices.forEach { slice ->
-            val sweep = (slice.value / total) * 360f
+        slices.forEachIndexed { index, slice ->
+            val sweep = (slice.amount / total * 360.0).toFloat()
+            val gap = min(3.5f, sweep / 3f)
             drawArc(
-                color = slice.color,
-                startAngle = startAngle,
-                sweepAngle = sweep,
-                useCenter = false,
-                topLeft = androidx.compose.ui.geometry.Offset(left, top),
-                size = androidx.compose.ui.geometry.Size(diameter, diameter),
-                style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke.toPx())
+                color = colors[index], startAngle = startAngle + gap / 2,
+                sweepAngle = (sweep - gap).coerceAtLeast(0f), useCenter = false,
+                style = Stroke(width = stroke, cap = StrokeCap.Round),
             )
             startAngle += sweep
         }
@@ -285,69 +243,137 @@ private fun SimplePieChart(
 }
 
 @Composable
-private fun CategoryGroupRow(data: CategoryGroupUi) {
-    val currency = NumberFormat.getCurrencyInstance()
-    var expanded by rememberSaveable(data.id) { mutableStateOf(false) }
+private fun CategoryLegend(slices: List<CategorySliceUi>, colors: List<Color>, total: Double) {
+    Column(verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceSm)) {
+        slices.chunked(2).forEachIndexed { rowIndex, row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(PiggySpacing.spaceSm)) {
+                row.forEachIndexed { columnIndex, slice ->
+                    val colorIndex = rowIndex * 2 + columnIndex
+                    Surface(Modifier.weight(1f), PiggyShapeTokens.Md, colors[colorIndex].copy(alpha = 0.10f)) {
+                        Row(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(Modifier.size(10.dp), PiggyShapeTokens.Pill, colors[colorIndex]) {}
+                            Spacer(Modifier.width(PiggySpacing.spaceSm))
+                            Column {
+                                Text(slice.categoryName, style = PiggyTypography.badgeLabel, color = PiggyColors.TextStrong, maxLines = 1)
+                                Text(String.format(Locale.getDefault(), "%.1f%%", slice.amount / total * 100), style = PiggyTypography.bodySm, color = PiggyColors.TextMuted)
+                            }
+                        }
+                    }
+                }
+                if (row.size == 1) Spacer(Modifier.weight(1f))
+            }
+        }
+    }
+}
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize()
-            .padding(vertical = 16.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { expanded = !expanded }
-        ) {
-            Surface(
-                modifier = Modifier
-                    .height(40.dp)
-                    .clip(CircleShape)
-                    .width(40.dp),
-                shape = CircleShape,
-                color = parseHexColorOrDefault(data.colorHex, MaterialTheme.colorScheme.tertiaryContainer)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = data.icon)
+@Composable
+private fun DailySpendingCard(stacks: List<DayStackUi>, month: YearMonth) {
+    val lastDay = stacks.lastOrNull { it.pieces.isNotEmpty() }?.day ?: month.lengthOfMonth()
+    val shortMonth = month.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    AnalyticsCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            SectionTitle("By day", Modifier.weight(1f))
+            Text("$shortMonth 1 – $shortMonth $lastDay", style = PiggyTypography.bodyMd, color = PiggyColors.TextMuted)
+        }
+        Spacer(Modifier.height(PiggySpacing.spaceXl))
+        DailyStackedBarChart(stacks, month)
+    }
+}
+
+@Composable
+private fun DailyStackedBarChart(stacks: List<DayStackUi>, yearMonth: YearMonth) {
+    val maxTotal = stacks.maxOfOrNull { it.pieces.sumOf(DayPieceUi::amount) }?.coerceAtLeast(0.0001) ?: 0.0001
+    LazyRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(horizontal = 2.dp)) {
+        items(stacks, key = { it.day }) { DailyBar(it, maxTotal, yearMonth) }
+    }
+}
+
+@Composable
+private fun DailyBar(stack: DayStackUi, maxTotal: Double, yearMonth: YearMonth) {
+    val pieces = stack.pieces.map { it.amount to categoryColor(null, it.colorHex) }
+    val weekday = remember(yearMonth, stack.day) {
+        LocalDate.of(yearMonth.year, yearMonth.month, stack.day).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    }
+    val baselineColor = piggyCardBorderColor()
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
+        Canvas(Modifier.height(160.dp).width(18.dp)) {
+            val total = pieces.sumOf { it.first }
+            if (total == 0.0) {
+                drawLine(baselineColor, Offset(0f, size.height - 1.dp.toPx()), Offset(size.width, size.height - 1.dp.toPx()), 2.dp.toPx())
+            } else {
+                var bottom = size.height
+                pieces.forEach { (amount, color) ->
+                    val height = (amount / maxTotal * size.height).toFloat().coerceAtLeast(2.dp.toPx())
+                    drawRoundRect(color, Offset(0f, bottom - height), Size(size.width, height), CornerRadius(6.dp.toPx()))
+                    bottom -= height
                 }
             }
-            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(text = data.name, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = "${data.count} expenses",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+        }
+        Spacer(Modifier.height(PiggySpacing.spaceXs))
+        Text(stack.day.toString(), style = PiggyTypography.badgeLabel, color = PiggyColors.TextStrong)
+        Text(weekday, style = PiggyTypography.bodySm, color = PiggyColors.TextMuted)
+    }
+}
+
+@Composable
+private fun CategoryDetailsHeading() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text("Category Details", style = MaterialTheme.typography.headlineMedium, color = PiggyColors.TextStrong, modifier = Modifier.weight(1f))
+        Text("Tap to view", style = PiggyTypography.bodyMd, color = PiggyColors.TextMuted)
+    }
+}
+
+@Composable
+private fun CategoryDetailCard(data: CategoryGroupUi) {
+    val currency = remember { NumberFormat.getCurrencyInstance() }
+    var expanded by rememberSaveable(data.id) { mutableStateOf(false) }
+    val color = categoryColor(data.name, data.colorHex)
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(durationMillis = 200),
+        label = "category_chevron_rotation",
+    )
+    Surface(
+        modifier = Modifier.fillMaxWidth().animateContentSize(), shape = PiggyShapeTokens.Card,
+        color = piggyCardContainerColor(),
+        border = BorderStroke(1.dp, piggyCardBorderColor()), shadowElevation = 1.dp,
+    ) {
+        Column {
+            Row(
+                Modifier.fillMaxWidth().clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) { expanded = !expanded }.padding(PiggySpacing.spaceLg),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(Modifier.size(48.dp), PiggyShapeTokens.Pill, color.copy(alpha = 0.16f)) {
+                    Box(contentAlignment = Alignment.Center) { Text(data.icon, style = MaterialTheme.typography.titleLarge) }
+                }
+                Spacer(Modifier.width(PiggySpacing.spaceMd))
+                Column(Modifier.weight(1f)) {
+                    Text(data.name, style = MaterialTheme.typography.titleMedium, color = PiggyColors.TextStrong)
+                    Text("${data.count} ${if (data.count == 1) "expense" else "expenses"}", style = PiggyTypography.bodyMd, color = PiggyColors.TextMuted)
+                }
+                Text(currency.format(data.total), style = PiggyTypography.currencyItem, color = PiggyColors.TextStrong)
+                Spacer(Modifier.width(PiggySpacing.spaceSm))
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Collapse ${data.name}" else "Expand ${data.name}",
+                    tint = PiggyColors.TextSubtle,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .rotate(chevronRotation),
                 )
             }
-            Text(
-                text = currency.format(data.total),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(text = if (expanded) "▲" else "▼", style = MaterialTheme.typography.titleMedium)
-        }
-
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(animationSpec = tween(durationMillis = 150)) + fadeIn(animationSpec = tween(durationMillis = 120)),
-            exit = shrinkVertically(animationSpec = tween(durationMillis = 150)) + fadeOut(animationSpec = tween(durationMillis = 120))
-        ) {
-            Column(Modifier.padding(top = 8.dp, bottom = 4.dp)) {
-                data.items.forEach { item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = item.dateLabel, style = MaterialTheme.typography.bodySmall, modifier = Modifier.width(60.dp))
-                        Text(text = item.name, modifier = Modifier.weight(1f), maxLines = 1)
-                        Text(text = currency.format(item.amount), style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(tween(150)) + fadeIn(tween(120)),
+                exit = shrinkVertically(tween(150)) + fadeOut(tween(120)),
+            ) {
+                Column(Modifier.padding(start = 76.dp, end = PiggySpacing.spaceLg, bottom = PiggySpacing.spaceLg)) {
+                    data.items.forEach { item ->
+                        Row(Modifier.fillMaxWidth().padding(top = PiggySpacing.spaceSm), verticalAlignment = Alignment.CenterVertically) {
+                            Text(item.dateLabel, style = PiggyTypography.bodySm, color = PiggyColors.TextMuted, modifier = Modifier.width(56.dp))
+                            Text(item.name, style = PiggyTypography.bodyMd, color = PiggyColors.TextStrong, modifier = Modifier.weight(1f), maxLines = 1)
+                            Text(currency.format(item.amount), style = PiggyTypography.badgeLabel, color = PiggyColors.TextStrong)
+                        }
                     }
                 }
             }
@@ -355,247 +381,57 @@ private fun CategoryGroupRow(data: CategoryGroupUi) {
     }
 }
 
-
 @Composable
-private fun SelectedSliceInfo(
-    slice: PieSlice,
-    totalAmount: Double,
-    modifier: Modifier = Modifier
-) {
-    val currency = remember { NumberFormat.getCurrencyInstance() }
-    val safeTotal = totalAmount.coerceAtLeast(0.0001)
-    val pct = ((slice.value.toDouble() / safeTotal) * 100.0)
-
-    Spacer(Modifier.height(16.dp))
+private fun EmptyTrendsState() {
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 1.dp,
-        modifier = modifier
+        modifier = Modifier.fillMaxWidth(), shape = PiggyShapeTokens.Card,
+        color = piggyCardContainerColor(),
+        border = BorderStroke(1.dp, piggyCardBorderColor()), shadowElevation = 1.dp,
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier
-                    .width(10.dp)
-                    .height(10.dp),
-                shape = CircleShape,
-                color = slice.color,
-                content = {}
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = slice.label,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "${String.format(Locale.getDefault(), "%.1f", pct)}%",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = currency.format(slice.value.toDouble()),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-            )
+        Column(Modifier.padding(vertical = 72.dp, horizontal = PiggySpacing.spaceXl), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("No expenses yet", style = MaterialTheme.typography.headlineMedium, color = PiggyColors.TextStrong)
+            Spacer(Modifier.height(PiggySpacing.spaceSm))
+            Text("Your spending insights will appear here.", style = PiggyTypography.bodyMd, color = PiggyColors.TextMuted)
         }
     }
 }
 
-// Daily stacked bar chart composables
-
-@Composable
-private fun DailyStackedBarChart(
-    stacks: List<DayStackUi>,
-    chartHeight: Dp,
-    barWidth: Dp,
-    barSpacing: Dp,
-    yearMonth: java.time.YearMonth,
-) {
-    val maxTotal = stacks.maxOfOrNull { day -> day.pieces.sumOf { it.amount } }?.coerceAtLeast(0.0001) ?: 0.0001
-    Column(modifier = Modifier.fillMaxWidth()) {
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(barSpacing),
-            contentPadding = PaddingValues(horizontal = 8.dp)
-        ) {
-            items(items = stacks, key = { it.day }) { day ->
-                DayBar(yearMonth = yearMonth, stack = day, maxTotal = maxTotal, chartHeight = chartHeight, barWidth = barWidth)
-            }
-        }
-        Spacer(Modifier.height(4.dp))
-    }
-}
-
-@Composable
-private fun DayBar(
-    yearMonth: java.time.YearMonth,
-    stack: DayStackUi,
-    maxTotal: Double,
-    chartHeight: Dp,
-    barWidth: Dp,
-) {
-    val emptyDayColor = MaterialTheme.colorScheme.surfaceVariant
-    val defaultPieceColor = MaterialTheme.colorScheme.tertiaryContainer
-    val segments: List<Pair<Double, Color>> = stack.pieces.map { it.amount to parseHexColorOrDefault(it.colorHex, defaultPieceColor) }
-    val weekday = try {
-        LocalDate.of(yearMonth.year, yearMonth.month, stack.day)
-            .dayOfWeek
-            .getDisplayName(TextStyle.SHORT, Locale.getDefault())
-    } catch (_: Throwable) { "" }
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Canvas(
-            modifier = Modifier
-                .height(chartHeight)
-                .width(barWidth)
-        ) {
-            val totalForDay = stack.pieces.sumOf { it.amount }
-            if (totalForDay <= 0.0) {
-                // draw faint baseline to indicate empty day
-                drawRect(
-                    color = emptyDayColor,
-                    size = androidx.compose.ui.geometry.Size(size.width, 2f),
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, size.height - 2f)
-                )
-                return@Canvas
-            }
-            var yBottom = size.height
-            segments.forEach { (amount, color) ->
-                if (amount <= 0.0) return@forEach
-                val h = ((amount / maxTotal) * size.height).toFloat().coerceAtLeast(1f)
-                drawRect(
-                    color = color,
-                    topLeft = androidx.compose.ui.geometry.Offset(0f, yBottom - h),
-                    size = androidx.compose.ui.geometry.Size(width = size.width, height = h)
-                )
-                yBottom -= h
-            }
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = stack.day.toString(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-        )
-        Text(
-            text = weekday,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-        )
-    }
+private fun categoryColor(categoryName: String?, colorHex: String?): Color = when (categoryName?.lowercase(Locale.getDefault())) {
+    "housing" -> PiggyColors.CategoryHousing
+    "groceries" -> PiggyColors.CategoryGroceries
+    "dining out" -> PiggyColors.CategoryDiningOut
+    "transport" -> PiggyColors.CategoryTransport
+    "utilities" -> PiggyColors.CategoryUtilities
+    "coffee & leisure" -> PiggyColors.CategoryCoffeeLeisure
+    else -> colorHex?.let { runCatching { Color(it.toColorInt()) }.getOrNull() } ?: PiggyColors.Emerald600
 }
 
 private val previewTrendsState = TrendsUiState(
-    month = YearMonth.of(2026, 10),
-    isLoading = false,
-    total = 2145.90,
+    month = YearMonth.of(2026, 10), isLoading = false, total = 2145.90,
     slices = listOf(
-        CategorySliceUi(categoryId = "housing", categoryName = "Housing", colorHex = "#FFADAD", amount = 1450.0),
-        CategorySliceUi(categoryId = "groceries", categoryName = "Groceries", colorHex = "#CAFFBF", amount = 385.50),
-        CategorySliceUi(categoryId = "dining", categoryName = "Dining Out", colorHex = "#FFD6A5", amount = 198.40),
-        CategorySliceUi(categoryId = "transport", categoryName = "Transport", colorHex = "#A0C4FF", amount = 112.00),
+        CategorySliceUi("housing", "Housing", "#F43F5E", 1450.0), CategorySliceUi("groceries", "Groceries", "#059669", 385.50),
+        CategorySliceUi("dining", "Dining Out", "#D97706", 185.0), CategorySliceUi("utilities", "Utilities", "#0891B2", 125.40),
     ),
     categories = listOf(
-        CategoryGroupUi(
-            id = "housing",
-            name = "Housing",
-            icon = "🏠",
-            colorHex = "#FFADAD",
-            total = 1450.0,
-            count = 1,
-            items = listOf(
-                CategoryExpenseItemUi(name = "Apartment Rent", amount = 1450.0, dateLabel = "Oct 1")
-            )
-        ),
-        CategoryGroupUi(
-            id = "groceries",
-            name = "Groceries",
-            icon = "🛒",
-            colorHex = "#CAFFBF",
-            total = 385.50,
-            count = 3,
-            items = listOf(
-                CategoryExpenseItemUi(name = "Whole Foods", amount = 184.50, dateLabel = "Oct 5"),
-                CategoryExpenseItemUi(name = "Trader Joe's", amount = 115.00, dateLabel = "Oct 12"),
-                CategoryExpenseItemUi(name = "Farmers Market", amount = 86.00, dateLabel = "Oct 19")
-            )
-        ),
-        CategoryGroupUi(
-            id = "dining",
-            name = "Dining Out",
-            icon = "🍔",
-            colorHex = "#FFD6A5",
-            total = 198.40,
-            count = 4,
-            items = listOf(
-                CategoryExpenseItemUi(name = "Sushi Night", amount = 84.00, dateLabel = "Oct 8"),
-                CategoryExpenseItemUi(name = "Brunch Cafe", amount = 52.40, dateLabel = "Oct 14"),
-                CategoryExpenseItemUi(name = "Pizza Place", amount = 62.00, dateLabel = "Oct 21")
-            )
-        ),
-        CategoryGroupUi(
-            id = "transport",
-            name = "Transport",
-            icon = "🚗",
-            colorHex = "#A0C4FF",
-            total = 112.00,
-            count = 2,
-            items = listOf(
-                CategoryExpenseItemUi(name = "City Metro Pass", amount = 45.00, dateLabel = "Oct 2"),
-                CategoryExpenseItemUi(name = "Airport Ride", amount = 67.00, dateLabel = "Oct 17")
-            )
-        )
+        CategoryGroupUi("housing", "Housing", "🏠", "#F43F5E", 1450.0, 1, listOf(CategoryExpenseItemUi("Apartment rent", 1450.0, "Oct 1"))),
+        CategoryGroupUi("groceries", "Groceries", "🛒", "#059669", 385.50, 3, listOf(CategoryExpenseItemUi("Market", 184.50, "Oct 5"))),
+        CategoryGroupUi("dining", "Dining Out", "🍴", "#D97706", 185.0, 5, listOf(CategoryExpenseItemUi("Dinner", 84.0, "Oct 8"))),
+        CategoryGroupUi("utilities", "Utilities", "💡", "#0891B2", 125.40, 2, listOf(CategoryExpenseItemUi("Energy", 125.40, "Oct 12"))),
     ),
     dayStacks = (1..14).map { day ->
-        val pieces = when (day) {
-            1 -> listOf(DayPieceUi("housing", 450.0, "#FFADAD"))
-            2 -> listOf(DayPieceUi("transport", 45.0, "#A0C4FF"))
-            5 -> listOf(DayPieceUi("groceries", 184.50, "#CAFFBF"))
-            8 -> listOf(DayPieceUi("dining", 84.0, "#FFD6A5"), DayPieceUi("transport", 24.0, "#A0C4FF"))
-            10 -> listOf(DayPieceUi("dining", 42.0, "#FFD6A5"))
-            12 -> listOf(DayPieceUi("groceries", 115.0, "#CAFFBF"), DayPieceUi("dining", 38.0, "#FFD6A5"))
-            14 -> listOf(DayPieceUi("dining", 52.40, "#FFD6A5"))
+        DayStackUi(day, when (day) {
+            1 -> listOf(DayPieceUi("housing", 1450.0, "#F43F5E")); 2 -> listOf(DayPieceUi("utilities", 45.0, "#0891B2"))
+            5 -> listOf(DayPieceUi("groceries", 184.50, "#059669")); 8 -> listOf(DayPieceUi("dining", 84.0, "#D97706"), DayPieceUi("utilities", 24.0, "#0891B2"))
+            10 -> listOf(DayPieceUi("dining", 42.0, "#D97706")); 12 -> listOf(DayPieceUi("groceries", 115.0, "#059669"), DayPieceUi("dining", 38.0, "#D97706"))
             else -> emptyList()
-        }
-        DayStackUi(day = day, pieces = pieces)
-    }
+        })
+    },
 )
 
-@Preview(name = "Trends Screen - Light", showBackground = true, heightDp = 900)
+@Preview(name = "Trends screen", showBackground = true, heightDp = 900)
 @Composable
-private fun TrendsScreenPreview() {
-    PiggyTheme {
-        Surface {
-            TrendsScreenContent(state = previewTrendsState)
-        }
-    }
-}
+private fun TrendsScreenPreview() { PiggyTheme { Surface { TrendsScreenContent(previewTrendsState) } } }
 
-@Preview(
-    name = "Trends Screen - Dark",
-    showBackground = true,
-    heightDp = 900,
-    uiMode = Configuration.UI_MODE_NIGHT_YES
-)
+@Preview(name = "Trends screen dark", showBackground = true, heightDp = 900, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
-private fun TrendsScreenDarkPreview() {
-    PiggyTheme(darkTheme = true) {
-        Surface {
-            TrendsScreenContent(state = previewTrendsState)
-        }
-    }
-}
-
-@Preview(name = "Category Group Row", showBackground = true)
-@Composable
-private fun CategoryGroupRowPreview() {
-    PiggyTheme {
-        Surface(Modifier.padding(16.dp)) {
-            CategoryGroupRow(data = previewTrendsState.categories[1])
-        }
-    }
-}
+private fun TrendsScreenDarkPreview() { PiggyTheme(darkTheme = true) { Surface { TrendsScreenContent(previewTrendsState) } } }

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_trends">Trends</string>
+    <string name="tab_current">Current</string>
+    <string name="tab_year">Year</string>
 </resources>
-
