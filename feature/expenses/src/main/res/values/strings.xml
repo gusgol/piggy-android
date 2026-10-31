@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="title_expenses">Expenses</string>
-    <string name="title_add_expense">Add expense</string>
-    <string name="title_edit_expense">Edit expense</string>
+    <string name="title_add_expense">New Expense</string>
+    <string name="title_edit_expense">Edit Expense</string>
+    <string name="subtitle_add_expense">Log a transaction to keep your vault accurate</string>
+    <string name="action_dismiss">Dismiss</string>
     <string name="action_more_options">More options</string>
     <string name="action_import_expenses">Import expenses</string>
     <string name="action_add_expense">Add Expense</string>
@@ -28,10 +30,19 @@
     <string name="insight_top_category">%1$s is your largest category this month at %2$s (%3$d%% of total spending).</string>
 
     <string name="label_name">Name</string>
+    <string name="label_expense_name">Expense Name</string>
+    <string name="placeholder_expense_name">e.g. Whole Foods Market, Metro Pass</string>
     <string name="label_amount">Amount</string>
+    <string name="label_amount_caps">AMOUNT</string>
+    <string name="label_instant_vault_sync">INSTANT VAULT BALANCE SYNC</string>
     <string name="label_date">Date</string>
     <string name="label_category">Category</string>
+    <string name="label_no_categories">No categories</string>
     <string name="label_fixed">Fixed</string>
+    <string name="label_fixed_expense">Fixed expense</string>
+    <string name="subtitle_fixed_expense">Recurring regular bill (e.g. rent, utilities)</string>
     <string name="btn_save">Save</string>
+    <string name="btn_save_expense">Save Expense</string>
+    <string name="btn_cancel">Cancel</string>
     <string name="btn_delete">Delete</string>
 </resources>

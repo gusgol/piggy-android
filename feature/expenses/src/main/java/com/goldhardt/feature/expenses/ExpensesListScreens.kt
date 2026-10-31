@@ -374,7 +374,7 @@ internal fun ExpensesListScreenContent(
             sheetState = editSheetState,
             categories = state.categories,
             initialName = current.name,
-            initialAmount = current.amount.toString(),
+            initialAmount = String.format(Locale.getDefault(), "%.2f", current.amount),
             initialDate = current.date,
             initialCategoryId = current.categoryId,
             initialIsFixed = current.isFixed,
