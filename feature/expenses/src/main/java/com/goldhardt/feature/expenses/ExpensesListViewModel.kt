@@ -2,83 +2,165 @@ package com.goldhardt.feature.expenses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.core.domain.model.Category
+import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.core.domain.model.ExpenseFormData
 import com.goldhardt.core.domain.model.ExpenseUpdate
-import com.goldhardt.feature.expenses.domain.ObserveMonthExpensesUseCase
 import com.goldhardt.feature.expenses.domain.AddExpenseUseCase
-import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
-import com.goldhardt.feature.expenses.domain.UpdateExpenseUseCase
+import com.goldhardt.feature.expenses.domain.BuildMonthlyExpensesProjectionUseCase
+import com.goldhardt.feature.expenses.domain.CategoryFilterOption
 import com.goldhardt.feature.expenses.domain.DeleteExpenseUseCase
+import com.goldhardt.feature.expenses.domain.ObserveCategoriesUseCase
+import com.goldhardt.feature.expenses.domain.ObserveMonthExpensesUseCase
+import com.goldhardt.feature.expenses.domain.SpendingInsight
+import com.goldhardt.feature.expenses.domain.UpdateExpenseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Instant
+import java.time.YearMonth
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.YearMonth
 
 data class UiState(
     val month: YearMonth = YearMonth.now(),
     val expenses: List<Expense> = emptyList(),
     val total: Double = 0.0,
+    val fixedTotal: Double = 0.0,
+    val variableTotal: Double = 0.0,
+    val fixedFraction: Float = 0f,
+    val variableFraction: Float = 0f,
+    val totalExpenseCount: Int = 0,
+    val categories: List<Category> = emptyList(),
+    val categoryFilters: List<CategoryFilterOption> = emptyList(),
+    val selectedCategoryId: String? = null,
+    val insight: SpendingInsight? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
 )
+
+private sealed interface MonthExpensesLoadState {
+    data class Loading(val month: YearMonth) : MonthExpensesLoadState
+    data class Loaded(val month: YearMonth, val expenses: List<Expense>) : MonthExpensesLoadState
+    data class Failed(val month: YearMonth, val message: String?) : MonthExpensesLoadState
+}
 
 @HiltViewModel
 @OptIn(ExperimentalCoroutinesApi::class)
 class ExpensesListViewModel @Inject constructor(
     private val observeMonthExpenses: ObserveMonthExpensesUseCase,
+    private val observeCategories: ObserveCategoriesUseCase,
+    private val buildProjection: BuildMonthlyExpensesProjectionUseCase,
     private val addExpenseUseCase: AddExpenseUseCase,
-    private val getUserCategoriesUseCase: GetUserCategoriesUseCase,
     private val updateExpenseUseCase: UpdateExpenseUseCase,
     private val deleteExpenseUseCase: DeleteExpenseUseCase,
 ) : ViewModel() {
 
     private val selectedMonth = MutableStateFlow(YearMonth.now())
+    private val selectedCategoryId = MutableStateFlow<String?>(null)
+    private val mutationError = MutableStateFlow<String?>(null)
 
-    private val _categories = MutableStateFlow<List<Category>>(emptyList())
-    val categories: StateFlow<List<Category>> = _categories.asStateFlow()
-
-    val uiState: StateFlow<UiState> =
-        selectedMonth
-            .flatMapLatest { month ->
-                observeMonthExpenses(month)
-                    .map { expenses -> createUiState(month, expenses, isLoading = false) }
-                    .catch { e -> emit(createUiState(month, isLoading = false, error = e.message)) }
+    private val monthExpensesState = selectedMonth.flatMapLatest { month ->
+        observeMonthExpenses(month)
+            .map<List<Expense>, MonthExpensesLoadState> { expenses ->
+                MonthExpensesLoadState.Loaded(month, expenses)
             }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = createUiState(selectedMonth.value, isLoading = true)
-            )
+            .onStart { emit(MonthExpensesLoadState.Loading(month)) }
+            .catch { e -> emit(MonthExpensesLoadState.Failed(month, e.message)) }
+    }
+
+    private val categoriesState = observeCategories()
+        .catch { emit(emptyList()) }
+
+    val uiState: StateFlow<UiState> = combine(
+        monthExpensesState,
+        categoriesState,
+        selectedCategoryId,
+        mutationError,
+    ) { monthState, categories, filterCategoryId, mutErr ->
+        when (monthState) {
+            is MonthExpensesLoadState.Loading -> {
+                val projection = buildProjection(emptyList(), categories, filterCategoryId)
+                UiState(
+                    month = monthState.month,
+                    categories = categories,
+                    categoryFilters = projection.categoryFilters,
+                    selectedCategoryId = projection.effectiveSelectedCategoryId,
+                    isLoading = true,
+                    error = mutErr,
+                )
+            }
+            is MonthExpensesLoadState.Failed -> {
+                val projection = buildProjection(emptyList(), categories, filterCategoryId)
+                UiState(
+                    month = monthState.month,
+                    categories = categories,
+                    categoryFilters = projection.categoryFilters,
+                    selectedCategoryId = projection.effectiveSelectedCategoryId,
+                    isLoading = false,
+                    error = mutErr ?: monthState.message,
+                )
+            }
+            is MonthExpensesLoadState.Loaded -> {
+                val projection = buildProjection(monthState.expenses, categories, filterCategoryId)
+                UiState(
+                    month = monthState.month,
+                    expenses = projection.filteredExpenses,
+                    total = projection.summary.totalAmount,
+                    fixedTotal = projection.summary.fixedAmount,
+                    variableTotal = projection.summary.variableAmount,
+                    fixedFraction = projection.summary.fixedFraction,
+                    variableFraction = projection.summary.variableFraction,
+                    totalExpenseCount = projection.summary.totalCount,
+                    categories = categories,
+                    categoryFilters = projection.categoryFilters,
+                    selectedCategoryId = projection.effectiveSelectedCategoryId,
+                    insight = projection.insight,
+                    isLoading = false,
+                    error = mutErr,
+                )
+            }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = UiState(month = selectedMonth.value, isLoading = true),
+    )
 
     fun setMonth(month: YearMonth) {
         selectedMonth.value = month
     }
 
-    fun refreshCategories() {
-        viewModelScope.launch {
-            try {
-                _categories.value = getUserCategoriesUseCase()
-            } catch (_: Throwable) {
-                _categories.value = emptyList()
-            }
+    fun selectCategory(categoryId: String?) {
+        selectedCategoryId.value = if (categoryId != null && selectedCategoryId.value == categoryId) {
+            null
+        } else {
+            categoryId
         }
     }
 
-    fun addExpense(name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+    fun clearError() {
+        mutationError.value = null
+    }
+
+    fun addExpense(
+        name: String,
+        amount: Double,
+        date: Instant,
+        categoryId: String,
+        isFixed: Boolean,
+    ) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 addExpenseUseCase(
                     ExpenseFormData(
                         name = name.trim(),
@@ -89,52 +171,45 @@ class ExpensesListViewModel @Inject constructor(
                     )
                 )
             } catch (t: Throwable) {
-                onError(t)
+                mutationError.value = t.message ?: "Failed to add expense"
             }
         }
     }
 
-    fun updateExpense(original: Expense, name: String, amount: Double, date: Instant, categoryId: String, isFixed: Boolean, onError: (Throwable) -> Unit = {}) {
+    fun updateExpense(
+        original: Expense,
+        name: String,
+        amount: Double,
+        date: Instant,
+        categoryId: String,
+        isFixed: Boolean,
+    ) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
+                val trimmedName = name.trim()
                 val update = ExpenseUpdate(
-                    name = original.name.takeIf { it != name }?.let { name.trim() },
-                    amount = original.amount.takeIf { it != amount }?.let { amount },
-                    date = original.date.takeIf { it != date }?.let { date },
-                    categoryId = original.categoryId.takeIf { it != categoryId }?.let { categoryId },
-                    isFixed = original.isFixed.takeIf { it != isFixed }?.let { isFixed },
+                    name = trimmedName.takeIf { it != original.name },
+                    amount = amount.takeIf { it != original.amount },
+                    date = date.takeIf { it != original.date },
+                    categoryId = categoryId.takeIf { it != original.categoryId },
+                    isFixed = isFixed.takeIf { it != original.isFixed },
                 )
                 updateExpenseUseCase(original.id, update)
             } catch (t: Throwable) {
-                onError(t)
+                mutationError.value = t.message ?: "Failed to update expense"
             }
         }
     }
 
-    fun deleteExpense(expenseId: String, onError: (Throwable) -> Unit = {}) {
+    fun deleteExpense(expenseId: String) {
         viewModelScope.launch {
             try {
+                mutationError.value = null
                 deleteExpenseUseCase(expenseId)
             } catch (t: Throwable) {
-                onError(t)
+                mutationError.value = t.message ?: "Failed to delete expense"
             }
         }
     }
-
-    private fun createUiState(
-        month: YearMonth,
-        expenses: List<Expense> = emptyList(),
-        isLoading: Boolean = false,
-        error: String? = null,
-    ): UiState {
-        return UiState(
-            month = month,
-            expenses = expenses,
-            total = expenses.sumOf { it.amount },
-            isLoading = isLoading,
-            error = error,
-        )
-    }
-
-
 }

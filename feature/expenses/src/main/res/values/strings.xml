@@ -3,7 +3,30 @@
     <string name="title_expenses">Expenses</string>
     <string name="title_add_expense">Add expense</string>
     <string name="title_edit_expense">Edit expense</string>
+    <string name="action_more_options">More options</string>
+    <string name="action_import_expenses">Import expenses</string>
+    <string name="action_add_expense">Add Expense</string>
+
+    <string name="label_total_expenses">TOTAL EXPENSES</string>
+    <string name="label_fixed_costs">FIXED COSTS</string>
+    <string name="label_variable_costs">VARIABLE</string>
+    <string name="section_transactions">Transactions</string>
+    <string name="filter_all">All</string>
+
+    <string name="badge_fixed">Fixed</string>
+    <string name="badge_variable">Variable</string>
+
     <string name="no_expenses_for_month">No expenses for this month</string>
+    <string name="no_expenses_for_month_subtitle">Tap Add Expense to record your first transaction.</string>
+    <string name="no_expenses_in_filter">No expenses in this filter</string>
+    <string name="no_expenses_in_filter_subtitle">Tap another category or add a new transaction.</string>
+
+    <string name="insight_title">Smart Piggy Insight</string>
+    <string name="insight_all_fixed">All %1$s spent this month comes from fixed costs — zero variable spending recorded so far.</string>
+    <string name="insight_controlled_variable">Fixed costs make up %1$d%% of this month\'s total, keeping flexible variable spending to %2$s.</string>
+    <string name="insight_top_variable_category">%1$s leads your flexible spending at %2$s (%3$d%% of this month\'s total).</string>
+    <string name="insight_top_category">%1$s is your largest category this month at %2$s (%3$d%% of total spending).</string>
+
     <string name="label_name">Name</string>
     <string name="label_amount">Amount</string>
     <string name="label_date">Date</string>
