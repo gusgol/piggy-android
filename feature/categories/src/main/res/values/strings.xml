@@ -2,4 +2,9 @@
 <resources>
     <string name="title_categories">Categories</string>
     <string name="action_add_category">Add Category</string>
+    <string name="empty_categories_title">No categories yet</string>
+    <string name="empty_categories_subtitle">Try adding a new custom category to organize your expenses.</string>
+    <string name="title_add_category">Add Category</string>
+    <string name="title_edit_category">Edit Category</string>
+    <string name="action_dismiss_error">Dismiss error</string>
 </resources>

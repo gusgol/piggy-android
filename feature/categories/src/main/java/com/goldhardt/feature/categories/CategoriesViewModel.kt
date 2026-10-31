@@ -79,4 +79,8 @@ class CategoriesViewModel @Inject constructor(
             }
         }
     }
+
+    fun clearError() {
+        mutationError.value = null
+    }
 }
