@@ -1,4 +1,4 @@
-package com.goldhardt.feature.expenses.import_expenses.domain
+package com.goldhardt.feature.expenses.importexpenses.domain
 
 import java.time.Instant
 

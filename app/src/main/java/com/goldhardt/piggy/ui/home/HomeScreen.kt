@@ -67,7 +67,7 @@ fun HomeScreen(
                 )
             },
             bottomBar = {
-                if (current != Screen.Settings) {
+                if (current != Screen.Settings && current != Screen.ImportExpenses) {
                     PiggyBottomBar(
                         current,
                         onItemClick

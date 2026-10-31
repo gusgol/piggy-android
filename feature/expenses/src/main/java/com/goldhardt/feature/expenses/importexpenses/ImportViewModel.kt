@@ -1,14 +1,14 @@
-package com.goldhardt.feature.expenses.import_expenses
+package com.goldhardt.feature.expenses.importexpenses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.feature.expenses.domain.GetUserCategoriesUseCase
-import com.goldhardt.feature.expenses.import_expenses.domain.CsvParseResult
-import com.goldhardt.feature.expenses.import_expenses.domain.CsvParser
-import com.goldhardt.feature.expenses.import_expenses.domain.ImportExpensesUseCase
-import com.goldhardt.feature.expenses.import_expenses.domain.ImportResult
-import com.goldhardt.feature.expenses.import_expenses.domain.ImportedExpense
+import com.goldhardt.feature.expenses.importexpenses.domain.CsvParseResult
+import com.goldhardt.feature.expenses.importexpenses.domain.CsvParser
+import com.goldhardt.feature.expenses.importexpenses.domain.ImportExpensesUseCase
+import com.goldhardt.feature.expenses.importexpenses.domain.ImportResult
+import com.goldhardt.feature.expenses.importexpenses.domain.ImportedExpense
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.InputStream
 import javax.inject.Inject
@@ -83,6 +83,7 @@ class ImportViewModel @Inject constructor(
 
     fun updateExpenseCategory(index: Int, categoryId: String) {
         _uiState.update { state ->
+            if (index !in state.expenses.indices) return@update state
             val updatedExpenses = state.expenses.toMutableList()
             updatedExpenses[index] = updatedExpenses[index].copy(categoryId = categoryId)
             state.copy(expenses = updatedExpenses)
@@ -91,6 +92,7 @@ class ImportViewModel @Inject constructor(
 
     fun updateExpenseIsFixed(index: Int, isFixed: Boolean) {
         _uiState.update { state ->
+            if (index !in state.expenses.indices) return@update state
             val updatedExpenses = state.expenses.toMutableList()
             updatedExpenses[index] = updatedExpenses[index].copy(isFixed = isFixed)
             state.copy(expenses = updatedExpenses)
@@ -112,6 +114,7 @@ class ImportViewModel @Inject constructor(
 
     fun deleteExpense(index: Int) {
         _uiState.update { state ->
+            if (index !in state.expenses.indices) return@update state
             val updatedExpenses = state.expenses.toMutableList().apply {
                 removeAt(index)
             }
@@ -121,12 +124,14 @@ class ImportViewModel @Inject constructor(
 
     fun importExpenses() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isImporting = true, importProgress = 0) }
+            _uiState.update { it.copy(isImporting = true, importProgress = 0, error = null) }
 
             val result = importExpensesUseCase(
                 expenses = _uiState.value.expenses,
                 onProgress = { current, total ->
-                    _uiState.update { it.copy(importProgress = (current * 100) / total) }
+                    if (total > 0) {
+                        _uiState.update { it.copy(importProgress = (current * 100) / total) }
+                    }
                 }
             )
 
@@ -160,6 +165,10 @@ class ImportViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 
     fun reset() {

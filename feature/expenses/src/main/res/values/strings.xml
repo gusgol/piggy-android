@@ -45,4 +45,72 @@
     <string name="btn_save_expense">Save Expense</string>
     <string name="btn_cancel">Cancel</string>
     <string name="btn_delete">Delete</string>
+
+    <!-- Import Expenses -->
+    <string name="title_import_expenses">Import Expenses</string>
+    <string name="title_import_review">Import Review &amp; Confirm</string>
+    <string name="action_navigate_back">Go back</string>
+    <string name="action_remove_expense">Remove expense</string>
+
+    <!-- Select File Step -->
+    <string name="import_smart_ledger_sync_caps">SMART LEDGER SYNC</string>
+    <string name="import_select_title">Import Expenses from CSV</string>
+    <string name="import_select_subtitle">Upload your bank statement or expense spreadsheet to automatically sync your spending.</string>
+    <string name="import_dropzone_title">Select CSV File</string>
+    <string name="import_dropzone_subtitle">Tap to browse and select a CSV statement from your device</string>
+    <string name="import_btn_browse_files">Browse Files</string>
+    <string name="import_analyzing_csv">Analyzing CSV…</string>
+    <string name="import_file_limit_hint">Supports .csv files up to 10MB</string>
+    <string name="import_format_card_title">Expected Column Format</string>
+    <string name="import_format_badge_required">3 Required</string>
+    <string name="import_format_card_subtitle">Your sheet can include extra columns, but must contain these core headers:</string>
+    <string name="import_col_date">Date</string>
+    <string name="import_col_date_spec">YYYY-MM-DD</string>
+    <string name="import_col_description">Description / Name</string>
+    <string name="import_col_description_spec">Merchant or label</string>
+    <string name="import_col_amount">Amount</string>
+    <string name="import_col_amount_spec">Positive or Negative decimal</string>
+
+    <!-- Review & Assign Step -->
+    <string name="import_step_review_stage">Review &amp; Stage</string>
+    <string name="import_badge_pending_commit">Pending Commit</string>
+    <string name="import_label_staged_batch_caps">STAGED BATCH</string>
+    <string name="import_label_queue_caps">QUEUE</string>
+    <plurals name="import_queue_items_count">
+        <item quantity="one">%d Item</item>
+        <item quantity="other">%d Items</item>
+    </plurals>
+    <plurals name="import_unassigned_warning">
+        <item quantity="one">%d expense needs category assignment before import</item>
+        <item quantity="other">%d expenses need category assignment before import</item>
+    </plurals>
+    <string name="import_all_assigned_ready">All staged expenses are categorized and ready to import</string>
+    <string name="import_bulk_assign_title">Bulk Assign Category</string>
+    <string name="import_bulk_assign_subtitle">Apply one category to all unassigned items</string>
+    <string name="import_label_staged_expenses_caps">STAGED EXPENSES</string>
+    <string name="import_btn_select_category">Select Category</string>
+    <string name="import_progress_status">Importing… %1$d%%</string>
+    <plurals name="import_btn_submit_count">
+        <item quantity="one">Import %d Expense</item>
+        <item quantity="other">Import %d Expenses</item>
+    </plurals>
+    <string name="import_footer_sync_hint">All staged records will sync to Piggy Ledger</string>
+
+    <!-- Completed Step -->
+    <string name="import_success_title">Import Successful!</string>
+    <plurals name="import_success_subtitle">
+        <item quantity="one">%d expense imported &amp; categorized neatly into your Piggy vault.</item>
+        <item quantity="other">%d expenses imported &amp; categorized neatly into your Piggy vault.</item>
+    </plurals>
+    <string name="import_label_total_balance_added_caps">TOTAL BALANCE ADDED</string>
+    <string name="import_label_categories_caps">CATEGORIES</string>
+    <string name="import_categorized_count">%1$d Categorized</string>
+    <string name="import_label_time_window_caps">TIME WINDOW</string>
+    <plurals name="import_days_captured">
+        <item quantity="one">%d Day captured</item>
+        <item quantity="other">%d Days captured</item>
+    </plurals>
+    <string name="import_btn_view_expenses">View Expenses</string>
+    <string name="import_btn_import_another">Import Another File</string>
+    <string name="import_btn_go_to_trends">Go to Spending Trends</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.goldhardt.feature.expenses.import_expenses.domain
+package com.goldhardt.feature.expenses.importexpenses.domain
 
 import com.goldhardt.core.auth.model.User
 import com.goldhardt.core.auth.repository.AuthRepository
@@ -109,3 +109,4 @@ class ImportExpensesUseCaseTest {
         override suspend fun deleteExpense(expenseId: String) = Unit
     }
 }
+

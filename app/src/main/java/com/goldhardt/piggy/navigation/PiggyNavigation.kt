@@ -11,7 +11,7 @@ import com.goldhardt.auth.LoginScreen
 import com.goldhardt.auth.SettingsScreen
 import com.goldhardt.feature.categories.CategoriesScreen
 import com.goldhardt.feature.expenses.ExpensesListScreen
-import com.goldhardt.feature.expenses.import_expenses.ImportExpensesScreen
+import com.goldhardt.feature.expenses.importexpenses.ImportExpensesScreen
 import com.goldhardt.feature.trends.TrendsScreen
 import com.goldhardt.piggy.ui.home.HomeScreen
 import com.goldhardt.piggy.ui.home.HomeViewModel
@@ -67,6 +67,10 @@ fun PiggyNavigation(
                         ImportExpensesScreen(
                             onNavigateBack = {
                                 backStack.removeLastOrNull()
+                            },
+                            onNavigateToTrends = {
+                                backStack.clear()
+                                backStack.add(Screen.Trends)
                             }
                         )
                     }
