@@ -98,7 +98,7 @@ fun PiggyTopBar(
 // Kotlin
 @Composable
 private fun FallbackAvatar(modifier: Modifier = Modifier) {
-    val pink = MaterialTheme.colorScheme.tertiary
+    val pink = MaterialTheme.colorScheme.secondaryContainer
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
