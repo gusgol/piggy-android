@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
+import com.goldhardt.designsystem.components.PiggyNavigationBarDefaults
 import com.goldhardt.designsystem.components.TotalAmountCard
 import com.goldhardt.designsystem.theme.PiggyTheme
 import java.text.NumberFormat
@@ -119,7 +120,9 @@ internal fun TrendsScreenContent(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(0.dp),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            contentPadding = PaddingValues(
+                bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + 24.dp
+            )
         ) {
             item { TotalAmountCard(total = state.total) }
 

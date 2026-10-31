@@ -1,44 +1,46 @@
 package com.goldhardt.piggy.ui.home
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.List
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import com.goldhardt.designsystem.R as DesignSystemR
+import com.goldhardt.designsystem.components.PiggyNavigationBar
+import com.goldhardt.designsystem.components.PiggyNavigationBarItem
 import com.goldhardt.piggy.navigation.Screen
 
 /**
- * PiggyBottomBar is a composable function that creates a bottom navigation bar
- *
- * TODO pass in the tabs instead of hardcoding them internally
- * TODO move this to :designsystem
+ * Top-level bottom navigation bar for Piggy, delegating visual styling to
+ * `:core:designsystem`'s [PiggyNavigationBar] and [PiggyNavigationBarItem].
  */
 @Composable
 fun PiggyBottomBar(
     current: Screen,
-    onItemClick: (Screen) -> Unit
+    onItemClick: (Screen) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    NavigationBar {
+    PiggyNavigationBar(modifier = modifier) {
         listOf(Screen.Expenses, Screen.Categories, Screen.Trends).forEach { screen ->
-            NavigationBarItem(
+            PiggyNavigationBarItem(
                 selected = screen == current,
                 onClick = { onItemClick(screen) },
                 icon = {
                     Icon(
-                        imageVector = when (screen) {
-                            Screen.Expenses -> Icons.AutoMirrored.Outlined.List
-                            Screen.Categories -> Icons.Outlined.Settings
-                            Screen.Trends -> Icons.Outlined.Info
-                            else -> Icons.AutoMirrored.Outlined.List
-                        },
-                        contentDescription = screen.name
+                        painter = painterResource(
+                            id = when (screen) {
+                                Screen.Expenses -> DesignSystemR.drawable.ic_receipt_long
+                                Screen.Categories -> DesignSystemR.drawable.ic_pie_chart
+                                Screen.Trends -> DesignSystemR.drawable.ic_trending_up
+                                else -> DesignSystemR.drawable.ic_receipt_long
+                            }
+                        ),
+                        contentDescription = screen.name,
+                        modifier = Modifier.size(20.dp),
                     )
                 },
-                label = { Text(screen.name) }
+                label = screen.name,
             )
         }
     }

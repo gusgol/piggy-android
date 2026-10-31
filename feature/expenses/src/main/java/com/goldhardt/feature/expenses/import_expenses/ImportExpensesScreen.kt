@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,6 +62,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
+import com.goldhardt.designsystem.components.PiggyNavigationBarDefaults
 import com.goldhardt.designsystem.theme.PiggyTheme
 import com.goldhardt.feature.expenses.R
 import com.goldhardt.feature.expenses.import_expenses.domain.ImportedExpense
@@ -130,7 +132,12 @@ internal fun ImportExpensesScreenContent(
     onDone: () -> Unit = {},
     onImportMore: () -> Unit = {},
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(bottom = PiggyNavigationBarDefaults.FloatingBottomClearance)
+    ) {
         when (state.importStep) {
             ImportStep.SELECT_FILE -> {
                 SelectFileStep(

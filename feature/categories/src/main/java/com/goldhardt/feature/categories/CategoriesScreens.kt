@@ -51,6 +51,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.designsystem.components.ConfigureTopBar
+import com.goldhardt.designsystem.components.PiggyNavigationBarDefaults
 import com.goldhardt.designsystem.theme.PiggyTheme
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -126,7 +127,12 @@ internal fun CategoriesScreenContent(
             else -> {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + 24.dp,
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(state.categories, key = { it.id }) { category ->

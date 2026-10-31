@@ -72,7 +72,7 @@ fun HomeScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(top = paddingValues.calculateTopPadding())
             ) {
                 content()
             }

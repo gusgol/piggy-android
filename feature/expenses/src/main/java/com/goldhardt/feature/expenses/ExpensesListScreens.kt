@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -67,6 +68,7 @@ import com.goldhardt.core.domain.model.Category
 import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.designsystem.components.ConfigureTopBar
 import com.goldhardt.designsystem.components.MonthSelector
+import com.goldhardt.designsystem.components.PiggyNavigationBarDefaults
 import com.goldhardt.designsystem.theme.CategoryColorPalette
 import com.goldhardt.designsystem.theme.PiggyColors
 import com.goldhardt.designsystem.theme.PiggyShapeTokens
@@ -195,7 +197,7 @@ internal fun ExpensesListScreenContent(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = PiggySpacing.spaceSm,
-                    bottom = 96.dp,
+                    bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + 88.dp,
                 ),
             ) {
                 item(key = "month_selector") {
@@ -337,9 +339,10 @@ internal fun ExpensesListScreenContent(
                 },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
+                    .navigationBarsPadding()
                     .padding(
                         end = PiggySpacing.margin,
-                        bottom = PiggySpacing.spaceLg,
+                        bottom = PiggyNavigationBarDefaults.FloatingBottomClearance + PiggySpacing.spaceSm,
                     ),
             )
         }
