@@ -4,7 +4,23 @@
     <string name="action_add_category">Add Category</string>
     <string name="empty_categories_title">No categories yet</string>
     <string name="empty_categories_subtitle">Try adding a new custom category to organize your expenses.</string>
-    <string name="title_add_category">Add Category</string>
+    <string name="title_add_category">New Category</string>
+    <string name="subtitle_add_category">Create a new custom category for your expenses</string>
     <string name="title_edit_category">Edit Category</string>
+    <string name="subtitle_edit_category">Customize your category badge, icon, and tone</string>
+    <string name="placeholder_preview_category_name">Category name</string>
+    <string name="label_category_name_caps">CATEGORY NAME</string>
+    <string name="placeholder_category_name">e.g., Subscriptions, Pet Care, Gym…</string>
+    <string name="action_clear_name">Clear text</string>
+    <string name="label_theme_tone_caps">THEME TONE</string>
+    <string name="label_select_tone">Select a tone</string>
+    <string name="label_symbol_caps">SYMBOL</string>
+    <string name="label_tap_to_choose">Tap to choose</string>
+    <string name="btn_save_changes">Save Changes</string>
+    <string name="btn_create_category">Create Category</string>
+    <string name="btn_delete_category">Delete Category</string>
+    <string name="delete_category_helper">Existing expenses will prompt for reassignment</string>
+    <string name="btn_cancel_category">Cancel</string>
+    <string name="action_dismiss_sheet">Close modal</string>
     <string name="action_dismiss_error">Dismiss error</string>
 </resources>

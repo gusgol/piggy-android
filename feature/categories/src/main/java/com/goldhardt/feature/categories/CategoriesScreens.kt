@@ -5,17 +5,19 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,13 +26,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -44,7 +49,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -55,14 +60,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -75,11 +89,16 @@ import com.goldhardt.designsystem.theme.PiggyShapeTokens
 import com.goldhardt.designsystem.theme.PiggySpacing
 import com.goldhardt.designsystem.theme.PiggyTheme
 import com.goldhardt.designsystem.theme.PiggyTypography
+import com.goldhardt.designsystem.theme.isPiggyDarkTheme
 import com.goldhardt.designsystem.theme.piggyCardBorderColor
 import com.goldhardt.designsystem.theme.piggyCardContainerColor
+import com.goldhardt.designsystem.theme.piggySubtleContainerColor
+import com.goldhardt.designsystem.theme.primaryFixed
 import com.goldhardt.designsystem.theme.rememberCategoryColorPalette
 import java.time.Instant
 import java.util.Locale
+
+private val SheetTopShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -218,6 +237,7 @@ internal fun CategoriesScreenContent(
         editingCategory?.let { current ->
             CategoryEditorBottomSheet(
                 title = stringResource(R.string.title_edit_category),
+                subtitle = stringResource(R.string.subtitle_edit_category),
                 sheetState = editSheetState,
                 initialName = current.name,
                 initialIcon = current.icon,
@@ -239,10 +259,11 @@ internal fun CategoriesScreenContent(
         if (isAddingCategory) {
             CategoryEditorBottomSheet(
                 title = stringResource(R.string.title_add_category),
+                subtitle = stringResource(R.string.subtitle_add_category),
                 sheetState = addSheetState,
                 initialName = "",
-                initialIcon = ICONS.firstOrNull() ?: "🏷️",
-                initialColor = COLORS.firstOrNull() ?: "#FFADAD",
+                initialIcon = "",
+                initialColor = "",
                 showDelete = false,
                 onDismiss = onDismissAddCategory,
                 onSave = onAddCategory
@@ -429,10 +450,11 @@ private fun ErrorBanner(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CategoryEditorBottomSheet(
     title: String,
+    subtitle: String,
     sheetState: SheetState,
     initialName: String,
     initialIcon: String,
@@ -445,126 +467,584 @@ private fun CategoryEditorBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        dragHandle = { BottomSheetDefaults.DragHandle() }
+        shape = SheetTopShape,
+        containerColor = piggyCardContainerColor(),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        tonalElevation = 0.dp,
+        dragHandle = null,
     ) {
-        var name by rememberSaveable(title) { mutableStateOf(initialName) }
-        var selectedIcon by rememberSaveable(title) { mutableStateOf(initialIcon) }
-        var selectedColor by rememberSaveable(title) { mutableStateOf(initialColor) }
+        CategoryEditorSheetContent(
+            title = title,
+            subtitle = subtitle,
+            initialName = initialName,
+            initialIcon = initialIcon,
+            initialColor = initialColor,
+            showDelete = showDelete,
+            onDismiss = onDismiss,
+            onSave = onSave,
+            onDelete = onDelete,
+        )
+    }
+}
 
+@Composable
+internal fun CategoryEditorSheetContent(
+    title: String,
+    subtitle: String,
+    initialName: String,
+    initialIcon: String,
+    initialColor: String,
+    showDelete: Boolean,
+    onDismiss: () -> Unit,
+    onSave: (name: String, icon: String, color: String) -> Unit,
+    modifier: Modifier = Modifier,
+    onDelete: (() -> Unit)? = null,
+) {
+    var name by rememberSaveable(title, initialName) { mutableStateOf(initialName) }
+    var selectedIcon by rememberSaveable(title, initialIcon) { mutableStateOf(initialIcon) }
+    var selectedColor by rememberSaveable(title, initialColor) { mutableStateOf(initialColor) }
+
+    val effectiveIcon = selectedIcon.ifBlank { ICONS.firstOrNull() ?: "🏷️" }
+    val effectiveColor = selectedColor.ifBlank { COLORS.firstOrNull() ?: "#FFADAD" }
+    val isSaveEnabled = name.isNotBlank()
+    val maxSheetHeight = (LocalConfiguration.current.screenHeightDp * 0.88f).dp
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(max = maxSheetHeight),
+        shape = SheetTopShape,
+        color = piggyCardContainerColor(),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(top = PiggySpacing.spaceMd),
         ) {
-            // Preview
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val previewBg = parseHexColorOrDefault(selectedColor, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(previewBg),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = selectedIcon, style = MaterialTheme.typography.titleLarge)
-                }
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
-                )
-            }
-
-            // Name
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+            // Drag Indicator Handle
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .width(48.dp)
+                    .height(6.dp)
+                    .clip(PiggyShapeTokens.Pill)
+                    .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
             )
 
-            // Icon Picker
-            Text(text = "Icon", style = MaterialTheme.typography.titleMedium)
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            Spacer(modifier = Modifier.height(PiggySpacing.spaceXs))
+
+            // Sheet Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = PiggySpacing.spaceXl)
+                    .padding(top = PiggySpacing.space2xs, bottom = PiggySpacing.spaceMd),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                ICONS.forEach { emoji ->
-                    val selected = emoji == selectedIcon
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
-                            .then(
-                                if (selected) Modifier.border(
-                                    2.dp,
-                                    MaterialTheme.colorScheme.primary,
-                                    CircleShape
-                                )
-                                else Modifier
-                            )
-                            .clickable { selectedIcon = emoji },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = emoji, style = MaterialTheme.typography.titleMedium)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = PiggyTypography.headlineMd.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = PiggyTypography.bodySm,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(PiggySpacing.spaceSm))
+
+                Surface(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(36.dp),
+                    shape = PiggyShapeTokens.Pill,
+                    color = piggySubtleContainerColor(),
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Outlined.Close,
+                            contentDescription = stringResource(R.string.action_dismiss_sheet),
+                            modifier = Modifier.size(20.dp),
+                        )
                     }
                 }
             }
 
-            // Color Picker
-            Text(text = "Color", style = MaterialTheme.typography.titleMedium)
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+            // Scrollable Form Body
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = PiggySpacing.spaceXl)
+                    .padding(bottom = PiggySpacing.space2xl),
+                verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceXl),
             ) {
-                COLORS.forEach { hex ->
-                    val color = parseHexColorOrDefault(hex, MaterialTheme.colorScheme.primary)
-                    val isSelected = hex.equals(selectedColor, ignoreCase = true)
-                    Box(
+                // 1. Live Interactive Preview Card
+                CategoryLivePreviewCard(
+                    name = name,
+                    selectedIcon = selectedIcon,
+                    selectedColor = selectedColor,
+                )
+
+                // 2. Category Name Input
+                CategoryNameField(
+                    value = name,
+                    onValueChange = { if (it.length <= 30) name = it },
+                    onClear = { name = "" },
+                )
+
+                // 3. Curated Palette Swatches
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceXs),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.label_theme_tone_caps),
+                            style = PiggyTypography.labelCaps,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        Text(
+                            text = if (selectedColor.isNotBlank()) {
+                                selectedColor.uppercase(Locale.US)
+                            } else {
+                                stringResource(R.string.label_select_tone)
+                            },
+                            style = PiggyTypography.bodySm.copy(fontWeight = FontWeight.Medium),
+                            color = if (selectedColor.isNotBlank()) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            },
+                        )
+                    }
+
+                    Column(
                         modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .then(
-                                if (isSelected) Modifier.border(
-                                    width = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    shape = CircleShape
-                                ) else Modifier
+                            .fillMaxWidth()
+                            .padding(top = PiggySpacing.space2xs),
+                        verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceSm),
+                    ) {
+                        COLORS.chunked(7).forEach { rowColors ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(PiggySpacing.spaceSm),
+                            ) {
+                                rowColors.forEach { hex ->
+                                    val swatchColor = parseHexColorOrDefault(hex, MaterialTheme.colorScheme.primary)
+                                    val isSelected = hex.equals(selectedColor, ignoreCase = true)
+                                    val checkTint = if (swatchColor.luminance() > 0.5f) {
+                                        PiggyColors.TextStrong
+                                    } else {
+                                        Color.White
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp)
+                                            .clip(PiggyShapeTokens.Md)
+                                            .background(swatchColor)
+                                            .then(
+                                                if (isSelected) {
+                                                    Modifier.border(
+                                                        width = 2.dp,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        shape = PiggyShapeTokens.Md,
+                                                    )
+                                                } else {
+                                                    Modifier
+                                                }
+                                            )
+                                            .clickable { selectedColor = hex },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Outlined.Check,
+                                                contentDescription = null,
+                                                tint = checkTint,
+                                                modifier = Modifier.size(18.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 4. Symbol / Icon Picker Grid
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceXs),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.label_symbol_caps),
+                            style = PiggyTypography.labelCaps,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        Text(
+                            text = stringResource(R.string.label_tap_to_choose),
+                            style = PiggyTypography.bodySm,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = PiggySpacing.space2xs),
+                        verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceSm),
+                    ) {
+                        val columns = 7
+                        ICONS.chunked(columns).forEach { rowIcons ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                rowIcons.forEach { emoji ->
+                                    val isSelected = emoji == selectedIcon
+                                    val isDark = isPiggyDarkTheme()
+                                    val containerBg = when {
+                                        isSelected && isDark -> MaterialTheme.colorScheme.primaryContainer
+                                        isSelected -> primaryFixed
+                                        else -> piggySubtleContainerColor()
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(containerBg)
+                                            .then(
+                                                if (isSelected) {
+                                                    Modifier.border(
+                                                        width = 2.dp,
+                                                        color = MaterialTheme.colorScheme.primary,
+                                                        shape = CircleShape,
+                                                    )
+                                                } else {
+                                                    Modifier
+                                                }
+                                            )
+                                            .clickable { selectedIcon = emoji },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text(
+                                            text = emoji,
+                                            style = PiggyTypography.headlineMd,
+                                        )
+                                    }
+                                }
+                                repeat(columns - rowIcons.size) {
+                                    Spacer(modifier = Modifier.size(44.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 5. Modal Footer Action Stack
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = PiggySpacing.spaceSm),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceMd),
+                ) {
+                    Button(
+                        onClick = {
+                            if (name.isNotBlank()) {
+                                onSave(name.trim(), effectiveIcon, effectiveColor)
+                            }
+                        },
+                        enabled = isSaveEnabled,
+                        shape = PiggyShapeTokens.Md,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp,
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (showDelete) Icons.Outlined.Check else Icons.Outlined.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Spacer(modifier = Modifier.width(PiggySpacing.spaceXs))
+                        Text(
+                            text = if (showDelete) {
+                                stringResource(R.string.btn_save_changes)
+                            } else {
+                                stringResource(R.string.btn_create_category)
+                            },
+                            style = PiggyTypography.titleSm,
+                        )
+                    }
+
+                    if (showDelete && onDelete != null) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            TextButton(
+                                onClick = onDelete,
+                                shape = PiggyShapeTokens.Default,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error,
+                                ),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(modifier = Modifier.width(PiggySpacing.spaceXs))
+                                Text(
+                                    text = stringResource(R.string.btn_delete_category),
+                                    style = PiggyTypography.titleSm.copy(fontSize = 15.sp),
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.delete_category_helper),
+                                style = PiggyTypography.bodySm.copy(fontSize = 12.sp),
+                                color = MaterialTheme.colorScheme.outline,
+                                textAlign = TextAlign.Center,
                             )
-                            .clickable { selectedColor = hex }
+                        }
+                    } else {
+                        TextButton(
+                            onClick = onDismiss,
+                            shape = PiggyShapeTokens.Default,
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = MaterialTheme.colorScheme.outline,
+                            ),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_cancel_category),
+                                style = PiggyTypography.titleSm.copy(fontSize = 15.sp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryLivePreviewCard(
+    name: String,
+    selectedIcon: String,
+    selectedColor: String,
+    modifier: Modifier = Modifier,
+) {
+    val hasColor = selectedColor.isNotBlank()
+    val hasName = name.isNotBlank()
+    val hasIcon = selectedIcon.isNotBlank()
+
+    val palette = rememberCategoryColorPalette(
+        colorHex = selectedColor.ifBlank { null },
+        categoryName = name.ifBlank { null },
+    )
+
+    val avatarBg = if (hasColor) {
+        palette.avatarContainer
+    } else {
+        MaterialTheme.colorScheme.surfaceContainerHigh
+    }
+    val avatarContentColor = if (hasColor) {
+        palette.avatarContent
+    } else {
+        MaterialTheme.colorScheme.outline
+    }
+
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = PiggyShapeTokens.Md,
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(PiggySpacing.spaceLg),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(PiggySpacing.spaceMd),
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = PiggyShapeTokens.Pill,
+                color = avatarBg,
+                contentColor = avatarContentColor,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = if (hasIcon) selectedIcon else "🏷️",
+                        style = PiggyTypography.headlineMd,
                     )
                 }
             }
 
-            // Actions (right-aligned)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(
-                    onClick = {
-                        onSave(name.trim(), selectedIcon, selectedColor)
+                Text(
+                    text = if (hasName) {
+                        name.trim()
+                    } else {
+                        stringResource(R.string.placeholder_preview_category_name)
                     },
-                    enabled = name.isNotBlank()
-                ) { Text("Save") }
-                if (showDelete) {
-                    Button(
-                        onClick = { onDelete?.invoke() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        )
-                    ) { Icon(imageVector = Icons.Outlined.Delete, contentDescription = "Delete") }
+                    style = PiggyTypography.titleSm.copy(
+                        fontWeight = if (hasName) FontWeight.Bold else FontWeight.SemiBold,
+                    ),
+                    color = if (hasName) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.outline
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (hasColor || hasName) {
+                    Spacer(modifier = Modifier.width(PiggySpacing.spaceSm))
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(PiggyShapeTokens.Pill)
+                            .background(palette.dot)
+                    )
                 }
             }
+        }
+    }
+}
 
-            Spacer(Modifier.height(8.dp))
+@Composable
+private fun CategoryNameField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    val containerColor = if (isFocused) {
+        piggyCardContainerColor()
+    } else {
+        piggySubtleContainerColor()
+    }
+    val borderColor = if (isFocused) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        Color.Transparent
+    }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(PiggySpacing.spaceXs),
+    ) {
+        Text(
+            text = stringResource(R.string.label_category_name_caps),
+            style = PiggyTypography.labelCaps,
+            color = MaterialTheme.colorScheme.outline,
+        )
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {
+                    focusRequester.requestFocus()
+                },
+            shape = PiggyShapeTokens.Md,
+            color = containerColor,
+            border = BorderStroke(1.dp, borderColor),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 50.dp)
+                    .padding(horizontal = PiggySpacing.spaceMd, vertical = PiggySpacing.spaceMd),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = PiggyTypography.bodyMd.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Done,
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester)
+                        .onFocusChanged { isFocused = it.isFocused },
+                    decorationBox = { innerTextField ->
+                        Box(contentAlignment = Alignment.CenterStart) {
+                            if (value.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.placeholder_category_name),
+                                    style = PiggyTypography.bodyMd,
+                                    color = MaterialTheme.colorScheme.outline,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            innerTextField()
+                        }
+                    },
+                )
+
+                if (value.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(PiggySpacing.spaceSm))
+                    Surface(
+                        onClick = onClear,
+                        modifier = Modifier.size(24.dp),
+                        shape = PiggyShapeTokens.Pill,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = stringResource(R.string.action_clear_name),
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -699,6 +1179,41 @@ private fun CategoriesScreenEmptyPreview() {
                 isLoading = false,
                 categories = emptyList()
             )
+        )
+    }
+}
+
+@Preview(name = "Edit Category Sheet - Light", showBackground = true)
+@Composable
+private fun EditCategorySheetPreview() {
+    PiggyTheme {
+        CategoryEditorSheetContent(
+            title = "Edit Category",
+            subtitle = "Customize your category badge, icon, and tone",
+            initialName = "Coffee & Snacks",
+            initialIcon = "☕️",
+            initialColor = "#FFADAD",
+            showDelete = true,
+            onDismiss = {},
+            onSave = { _, _, _ -> },
+            onDelete = {},
+        )
+    }
+}
+
+@Preview(name = "New Category Sheet (Blank State) - Light", showBackground = true)
+@Composable
+private fun NewCategorySheetPreview() {
+    PiggyTheme {
+        CategoryEditorSheetContent(
+            title = "New Category",
+            subtitle = "Create a new custom category for your expenses",
+            initialName = "",
+            initialIcon = "",
+            initialColor = "",
+            showDelete = false,
+            onDismiss = {},
+            onSave = { _, _, _ -> },
         )
     }
 }
