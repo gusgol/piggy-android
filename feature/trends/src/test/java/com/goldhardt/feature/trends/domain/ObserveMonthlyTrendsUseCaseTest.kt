@@ -86,6 +86,57 @@ class ObserveMonthlyTrendsUseCaseTest {
         assertEquals(2, trends.dayStacks[4].pieces.size) // Oct 5 has 2 categories
     }
 
+    @Test
+    fun `yearly trends aggregate category spending for twelve months`() = runTest {
+        val referenceMonth = YearMonth.of(2025, 10)
+        val date = LocalDate.of(2025, 10, 5).atStartOfDay(ZoneId.systemDefault()).toInstant()
+        val previousMonthDate = LocalDate.of(2025, 9, 12).atStartOfDay(ZoneId.systemDefault()).toInstant()
+        val expenses = listOf(
+            Expense(
+                id = "1",
+                name = "Lunch",
+                amount = 30.0,
+                date = date,
+                categoryId = "food",
+                isFixed = false,
+                createdAt = date,
+                userId = "u1",
+                categoryName = "Food",
+                categoryColor = "#FFADAD",
+            ),
+            Expense(
+                id = "2",
+                name = "Groceries",
+                amount = 70.0,
+                date = previousMonthDate,
+                categoryId = "food",
+                isFixed = false,
+                createdAt = previousMonthDate,
+                userId = "u1",
+                categoryName = "Food",
+                categoryColor = "#FFADAD",
+            ),
+        )
+        val useCase = ObserveYearlyTrendsUseCase(
+            expenseRepository = FakeExpenseRepository(expenses),
+            userSession = UserSession(
+                FakeAuthRepository(
+                    User(id = "u1", email = "a@b.com", displayName = "Test", photoUrl = null),
+                ),
+            ),
+        )
+
+        val trends = useCase(referenceMonth).first()
+
+        assertEquals(12, trends.months.size)
+        assertEquals(referenceMonth, trends.months.first().month)
+        assertEquals(30.0, trends.months.first().total, 0.001)
+        assertEquals(30.0, trends.months.first().categories.single().total, 0.001)
+        assertEquals(referenceMonth.minusMonths(1), trends.months[1].month)
+        assertEquals(70.0, trends.months[1].total, 0.001)
+        assertEquals(0.0, trends.months.last().total, 0.001)
+    }
+
     private class FakeAuthRepository(override val currentUser: User?) : AuthRepository {
         override fun authState(): Flow<User?> = flowOf(currentUser)
         override suspend fun signInWithGoogle(idToken: String): Result<User> = throw UnsupportedOperationException()
@@ -95,6 +146,12 @@ class ObserveMonthlyTrendsUseCaseTest {
     private class FakeExpenseRepository(private val expenses: List<Expense>) : ExpenseRepository {
         override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<Expense>> =
             flowOf(expenses)
+
+        override fun observeExpensesForRange(
+            userId: String,
+            startMonthInclusive: YearMonth,
+            endMonthExclusive: YearMonth,
+        ): Flow<List<Expense>> = flowOf(expenses)
 
         override suspend fun getExpenses(userId: String, month: YearMonth, categoryId: String?): List<Expense> =
             expenses
@@ -109,4 +166,3 @@ class ObserveMonthlyTrendsUseCaseTest {
         override suspend fun deleteExpense(expenseId: String) = Unit
     }
 }
-

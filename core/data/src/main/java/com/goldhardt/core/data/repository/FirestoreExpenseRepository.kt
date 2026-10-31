@@ -22,6 +22,24 @@ class FirestoreExpenseRepository @Inject constructor(
     override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<Expense>> {
         val (startAt, endAt) = yearMonthToInstantRange(month)
         val expensesFlow = remote.observeExpenses(userId, startAt, endAt, categoryId)
+        return observeExpenses(userId, expensesFlow)
+    }
+
+    override fun observeExpensesForRange(
+        userId: String,
+        startMonthInclusive: YearMonth,
+        endMonthExclusive: YearMonth,
+    ): Flow<List<Expense>> {
+        require(startMonthInclusive < endMonthExclusive) {
+            "The start month must be before the exclusive end month."
+        }
+        val startAt = yearMonthToInstantRange(startMonthInclusive).first
+        val endAt = yearMonthToInstantRange(endMonthExclusive.minusMonths(1)).second
+        val expensesFlow = remote.observeExpenses(userId, startAt, endAt)
+        return observeExpenses(userId, expensesFlow)
+    }
+
+    private fun observeExpenses(userId: String, expensesFlow: Flow<List<Expense>>): Flow<List<Expense>> {
         val categoriesFlow = categoryRemote.observeCategories(userId)
         return expensesFlow.combine(categoriesFlow) { expenses, categories ->
             val categoryById = categories.associateBy { it.id }

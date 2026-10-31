@@ -13,6 +13,13 @@ interface ExpenseRepository {
         categoryId: String? = null,
     ): Flow<List<Expense>>
 
+    /** Observe expenses from the start month through the month before the exclusive end month. */
+    fun observeExpensesForRange(
+        userId: String,
+        startMonthInclusive: YearMonth,
+        endMonthExclusive: YearMonth,
+    ): Flow<List<Expense>>
+
     suspend fun getExpenses(
         userId: String,
         month: YearMonth,
@@ -27,4 +34,3 @@ interface ExpenseRepository {
 
     suspend fun deleteExpense(expenseId: String)
 }
-

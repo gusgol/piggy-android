@@ -3,4 +3,11 @@
     <string name="title_trends">Trends</string>
     <string name="tab_current">Current</string>
     <string name="tab_year">Year</string>
+    <string name="year_comparison_title">12-month comparison</string>
+    <string name="year_comparison_subtitle">Compare your spending by month and category</string>
+    <string name="filter_all_categories">All categories</string>
+    <string name="year_comparison_empty">No spending found in the last 12 months.</string>
+    <string name="year_comparison_error">Unable to load yearly trends. Please try again.</string>
+    <string name="trends_loading">Loading…</string>
+    <string name="trends_error">Unable to load trends. Please try again.</string>
 </resources>

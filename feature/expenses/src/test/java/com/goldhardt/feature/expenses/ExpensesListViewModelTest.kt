@@ -169,6 +169,17 @@ class ExpensesListViewModelTest {
         override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<Expense>> =
             flowOf(expensesByMonth[month].orEmpty())
 
+        override fun observeExpensesForRange(
+            userId: String,
+            startMonthInclusive: YearMonth,
+            endMonthExclusive: YearMonth,
+        ): Flow<List<Expense>> = flowOf(
+            generateSequence(startMonthInclusive) { month -> month.plusMonths(1) }
+                .takeWhile { it < endMonthExclusive }
+                .flatMap { expensesByMonth[it].orEmpty() }
+                .toList(),
+        )
+
         override suspend fun getExpenses(userId: String, month: YearMonth, categoryId: String?): List<Expense> =
             expensesByMonth[month].orEmpty()
 
@@ -184,4 +195,3 @@ class ExpensesListViewModelTest {
         override suspend fun deleteExpense(expenseId: String) = Unit
     }
 }
-

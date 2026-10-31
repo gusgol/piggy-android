@@ -2,6 +2,7 @@ package com.goldhardt.core.data.repository
 
 import com.goldhardt.core.data.datasource.CategoryRemoteDataSource
 import com.goldhardt.core.data.datasource.ExpenseRemoteDataSource
+import com.goldhardt.core.data.util.yearMonthToInstantRange
 import com.goldhardt.core.domain.model.Category
 import com.goldhardt.core.domain.model.Expense
 import com.goldhardt.core.domain.model.ExpenseFormData
@@ -56,13 +57,38 @@ class FirestoreExpenseRepositoryTest {
         assertEquals("#CAFFBF", enriched[0].categoryColor)
     }
 
+    @Test
+    fun `observeExpensesForRange observes the inclusive start and last day of the exclusive end month`() = runTest {
+        val remote = FakeExpenseRemoteDataSource(emptyList())
+        val repository = FirestoreExpenseRepository(
+            remote = remote,
+            categoryRemote = FakeCategoryRemoteDataSource(emptyList()),
+        )
+
+        repository.observeExpensesForRange(
+            userId = "u1",
+            startMonthInclusive = YearMonth.of(2024, 11),
+            endMonthExclusive = YearMonth.of(2025, 11),
+        ).first()
+
+        assertEquals(yearMonthToInstantRange(YearMonth.of(2024, 11)).first, remote.startAt)
+        assertEquals(yearMonthToInstantRange(YearMonth.of(2025, 10)).second, remote.endAt)
+    }
+
     private class FakeExpenseRemoteDataSource(private val items: List<Expense>) : ExpenseRemoteDataSource {
+        var startAt: Instant? = null
+        var endAt: Instant? = null
+
         override fun observeExpenses(
             userId: String,
             startAt: Instant,
             endAt: Instant,
             categoryId: String?
-        ): Flow<List<Expense>> = flowOf(items)
+        ): Flow<List<Expense>> {
+            this.startAt = startAt
+            this.endAt = endAt
+            return flowOf(items)
+        }
 
         override suspend fun getExpenses(
             userId: String,
@@ -90,4 +116,3 @@ class FirestoreExpenseRepositoryTest {
         override suspend fun deleteCategory(categoryId: String) = Unit
     }
 }
-

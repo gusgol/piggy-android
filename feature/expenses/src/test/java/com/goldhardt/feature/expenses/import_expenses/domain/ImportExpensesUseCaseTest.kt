@@ -77,6 +77,12 @@ class ImportExpensesUseCaseTest {
         override fun observeExpenses(userId: String, month: YearMonth, categoryId: String?): Flow<List<Expense>> =
             flowOf(emptyList())
 
+        override fun observeExpensesForRange(
+            userId: String,
+            startMonthInclusive: YearMonth,
+            endMonthExclusive: YearMonth,
+        ): Flow<List<Expense>> = flowOf(emptyList())
+
         override suspend fun getExpenses(userId: String, month: YearMonth, categoryId: String?): List<Expense> =
             emptyList()
 
@@ -103,4 +109,3 @@ class ImportExpensesUseCaseTest {
         override suspend fun deleteExpense(expenseId: String) = Unit
     }
 }
-
